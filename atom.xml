@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-04-29T00:24:46.565Z</updated>
+  <updated>2025-05-02T16:27:40.022Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -17,104 +17,25 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>a</title>
-    <link href="https://cadenxc.com/2025/04/27/a/"/>
-    <id>https://cadenxc.com/2025/04/27/a/</id>
-    <published>2025-04-27T12:03:53.000Z</published>
-    <updated>2025-04-29T00:24:46.565Z</updated>
+    <title>阅读《代码大全》</title>
+    <link href="https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/"/>
+    <id>https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/</id>
+    <published>2025-04-27T10:26:23.000Z</published>
+    <updated>2025-05-02T16:27:40.022Z</updated>
     
-    <content type="html"><![CDATA[<p><img src="/sleep.jpg" alt="sleep"></p>]]></content>
+    <content type="html"><![CDATA[<p>《代码大全》（code complete），非常有名的书籍，虽然是2000年初的作品，依然非常有用。</p><p>我读了两遍，先是读到英文版，后来又读了一边中文版。技术书籍的英文版写的很好，程序员本身就有英文基础，单词概念也是熟悉的，很容易读懂。不过我也要小小吐槽一下：routine 和 code turning的定义并不是在第一次出现的时候解释的，看语境可以理解routine，但我按通常的翻译惯例有些不对劲，译者翻译的子程序我觉得也没有说出routine这个词的全部，routine包含子程序。</p><p>讲隐喻(metaphor)这章给我的印象挺深，用隐喻来帮助理解。<br>不要陷进语言里，没有的功能自己定义。c语言可以自己定义bool类型。</p><p>最喜欢的章节是最后的几章，讲的是个人风格这种哲学层面的东西，整体布局。</p>]]></content>
     
     
       
       
-    <summary type="html">&lt;p&gt;&lt;img src=&quot;/sleep.jpg&quot; alt=&quot;sleep&quot;&gt;&lt;/p&gt;
-</summary>
+    <summary type="html">&lt;p&gt;《代码大全》（code complete），非常有名的书籍，虽然是2000年初的作品，依然非常有用。&lt;/p&gt;
+&lt;p&gt;我读了两遍，先是读到英文版，后来又读了一边中文版。技术书籍的英文版写的很好，程序员本身就有英文基础，单词概念也是熟悉的，很容易读懂。不过我也要小小吐槽一下：r</summary>
       
-    
-    
-    
-    
-  </entry>
-  
-  <entry>
-    <title>编码</title>
-    <link href="https://cadenxc.com/2025/04/27/%E7%BC%96%E7%A0%81/"/>
-    <id>https://cadenxc.com/2025/04/27/%E7%BC%96%E7%A0%81/</id>
-    <published>2025-04-27T12:03:53.000Z</published>
-    <updated>2025-04-28T08:30:53.935Z</updated>
-    
     
     
     
     
     <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>simple</title>
-    <link href="https://cadenxc.com/2025/04/27/simple/"/>
-    <id>https://cadenxc.com/2025/04/27/simple/</id>
-    <published>2025-04-27T10:26:23.000Z</published>
-    <updated>2025-04-27T11:59:19.265Z</updated>
-    
-    <content type="html"><![CDATA[<figure class="highlight plaintext"><figcaption><span>c++</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std::cout &lt;&lt; &quot;hello world.&quot; &lt;&lt; std::endl;</span><br></pre></td></tr></table></figure>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;figure class=&quot;highlight plaintext&quot;&gt;&lt;figcaption&gt;&lt;span&gt;c++&lt;/span&gt;&lt;/figcaption&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;</summary>
-      
-    
-    
-    
-    <category term="categories1" scheme="https://cadenxc.com/categories/categories1/"/>
-    
-    <category term="cate_1" scheme="https://cadenxc.com/categories/categories1/cate-1/"/>
-    
-    <category term="categories2" scheme="https://cadenxc.com/categories/categories2/"/>
-    
-    
-    <category term="tag1" scheme="https://cadenxc.com/tags/tag1/"/>
-    
-    <category term="tag2" scheme="https://cadenxc.com/tags/tag2/"/>
-    
-    <category term="tag3" scheme="https://cadenxc.com/tags/tag3/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>my first blog</title>
-    <link href="https://cadenxc.com/2025/04/26/blog%20start/"/>
-    <id>https://cadenxc.com/2025/04/26/blog%20start/</id>
-    <published>2025-04-26T10:48:14.000Z</published>
-    <updated>2025-04-28T05:28:13.339Z</updated>
-    
-    <content type="html"><![CDATA[<p>I want to be a great game enginer.</p>]]></content>
-    
-    
-      
-      
-    <summary type="html">&lt;p&gt;I want to be a great game enginer.&lt;/p&gt;
-</summary>
-      
-    
-    
-    
-    
-  </entry>
-  
-  <entry>
-    <title>Hello World</title>
-    <link href="https://cadenxc.com/2025/04/26/hello-world/"/>
-    <id>https://cadenxc.com/2025/04/26/hello-world/</id>
-    <published>2025-04-26T10:39:49.820Z</published>
-    <updated>2025-04-28T07:55:03.400Z</updated>
-    
-    
-    
-    
     
   </entry>
   
