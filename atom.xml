@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-05-06T15:59:08.257Z</updated>
+  <updated>2025-05-05T08:15:43.274Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,23 +15,6 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
-  
-  <entry>
-    <title>学习Cmake</title>
-    <link href="https://cadenxc.com/2025/05/06/%E5%AD%A6%E4%B9%A0Cmake/"/>
-    <id>https://cadenxc.com/2025/05/06/%E5%AD%A6%E4%B9%A0Cmake/</id>
-    <published>2025-05-06T15:58:54.000Z</published>
-    <updated>2025-05-06T15:59:08.257Z</updated>
-    
-    <content type="html"><![CDATA[<p>我看网上也要很多不错的Cmake教程，这里就写些我的心得体会。</p><span id="more"></span><p>先找到一个要学习的用cmake构建的源码。我在Github上找了跟着The Cherno学习的一个用cmake构建的游戏引擎。看到别人和自己做类似的事情成功了，会增加自己前进的信心。</p><p>自己跟着写（learn by doing）。因为游戏引擎比较复杂，Cmake文件从少量的文件开始编译比较好，参考原项目的写法。</p><p>先让构建一个成功运行的代码，不用管高级的用法。后面遇到不知道如何写的时候就是学习的好时机。</p><p>注意有些Cmake有的命令很长，容易写错。没运行成功可能就是这里出问题。</p><p>如果确保自己写的Cmake文件没问题，重新编译后还是不通过，可以试试删除build文件夹重新编译。</p><p>我觉得我的Cmake水平只是入门，可以编译一个没有，没有测试，自定义操作的项目。但是我不怕编译任何一个项目，不是学不会，而是没学，你总是可以找到方法让代码编译成功。不记得答案没关系，知道在哪里寻找答案就行。</p>]]></content>
-    
-    
-    <summary type="html">&lt;p&gt;我看网上也要很多不错的Cmake教程，这里就写些我的心得体会。&lt;/p&gt;</summary>
-    
-    
-    
-    
-  </entry>
   
   <entry>
     <title>阅读《代码大全》</title>
