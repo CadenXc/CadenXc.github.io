@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-05-20T06:59:48.986Z</updated>
+  <updated>2025-05-27T03:19:38.547Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,25 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>游戏引擎学习之旅（3）渲染器重构</title>
+    <link href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/"/>
+    <id>https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/</id>
+    <published>2025-05-27T03:17:19.000Z</published>
+    <updated>2025-05-27T03:19:38.547Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="重构的理由"><a href="#重构的理由" class="headerlink" title="重构的理由"></a>重构的理由</h2><p>跟着视频写为什么需要重构呢？你只需要从视频或者代码库里把东习 <em>steal</em> 出来不就行了吗？<br>这是因为我在看他的视频的时候感觉非常熟悉，他在讲 OpenGL 的时候抽象出了一个类似的渲染器（Renderer），我想就把学习 OpenGL 写的代码哪过来不久行了吗？。确实行了，屏幕上有预期的图片绘出。但是他的设计思路是把渲染的 API 和具体的图形学 API 的实现分开，方便后续扩展API，比如Vulkan，可以让使用引擎的人不知道渲染的具体实现。<br>我的当前的代码结构没有这个抽象的 API ，直接就是 OpenGL 的具体实现，这就我直接加上的代码就不合适了。于是就开启了重构工作。</p><h2 id="开始重构"><a href="#开始重构" class="headerlink" title="开始重构"></a>开始重构</h2><p>我从 The Cherno 那里 <em>steal</em> 了抽象 API ，我要做的就是让我的现在类继承抽象的 API 。我感觉没什么困难的，可是我基本上是第一次做这种类似的工作，修改了一处就报错，代码无法运行，有一种无从下手的感觉。从 The Cherno 那里 <em>steal</em> 的抽象 API是阻挡我修改的难关，不仅成员函数的参数和数量不同，里面的数据也进行了封装，成员变量的类型和数量不同，不能直接加上继承就让代码运行。种种限制让我对着代码发愁。这很挫败，难道我应该跟着视频走，回退到没有合并代码的版本吗？有没有什么技巧可以帮我重构呢？</p><p>还真有，我想起来了这本著名的<a href="https://book.douban.com/subject/30468597/">《重构 改善既有代码的设计》</a>，之前我一直用不上就没有读，现在是时候读读这本书了。这本书给了我很大的帮助。对我来说学到的重要的思想是：小步走，让代码保持可工作状态和重构会让开发更快。这让我静下心来，不想着一步到位，而是慢慢调整代码。我一步步得重构了原本的代码，并且加深了我对这整个渲染器的设计的理解。</p><h2 id="在重构中理解设计思路"><a href="#在重构中理解设计思路" class="headerlink" title="在重构中理解设计思路"></a>在重构中理解设计思路</h2><p> 我在The Cherno 的 Layout 的布局的 API 传入的参是 自定义的枚举类型，float2 就表示两个float类型的布局，把原本的类型和个数这个参数给些在了一起，我在用这个自定义类形的参数替代原来的 float 和 unsigned int 时， 想着这里，肯定有一个把这个变量变换为原来的两个的函数，我果然看到了两个相关的函数，一个计算大小，一个返回类型。</p><p> 他的顶点数组的创建用的是Create()函数，我之前没有意思到，我重构的时候意识才到这个函数的作用是让调用渲染器时只包含抽象 API 的头文件而不用与 具体的OpenGL类的图形学 API 的实现相关。</p><p>RendererAPI，RenderCommand，Renderer类之间的关系是后者调用前者。 渲染器的 Draw 和 Clear 是一个静态函数时，不用具体实现一个Renderer类。这里整个Renderer的实现的接口都是方便引擎的使用者调用。我在这里重构了几天既让用户方便，也让开发者有一个结构更加合理的代码库，方便后续开发。</p><h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p> 这种跟上思路的感觉很棒。</p><p>这次没有学太多的新东西，基本上是 OpenGL 系列里的东西，这是的重点是重构。</p><p>我确实做的是重构，写了几天，运行的结果还是和之前一模一样。难怪书里开头问了一个问题：如何跟经理解释重构的意义。</p><p>书里说重构的最佳时机就是在添加新功能之前，这个我也认同，我就是在添加相机功能之前重构代码。</p><p>提高了我重构的意识。当代码报了一个头文件循环包含的错误时，我想这是一个坏味道，就检查了其他的代码的头文件的包含，去掉多余的。</p><p>在重构的过程中真正学到了东西，而不是从theCherno那里steal。也难怪<a href="https://www.norvig.com/21-days.html">Peter Norvig说要learning by doing</a>了。</p><p> 我看书的时候意识到theCherno的教学中的代码也是在进行重构。先在屏幕上花画出一个三角型，在不改变显示效果的情况下对代码进行修改，提高代码的可读性和可扩展性，提高代码质量。</p>]]></content>
+    
+    
+    <summary type="html">OpenGL渲染器的实现和重构</summary>
+    
+    
+    
+    
+    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
+    
+  </entry>
   
   <entry>
     <title>游戏引擎学习之旅（2）事件系统</title>
