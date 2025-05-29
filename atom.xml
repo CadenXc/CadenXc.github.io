@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-05-27T03:19:38.547Z</updated>
+  <updated>2025-05-29T12:45:37.209Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,25 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>《重构 改善既有代码的设计》简评</title>
+    <link href="https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/"/>
+    <id>https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/</id>
+    <published>2025-05-29T12:43:21.000Z</published>
+    <updated>2025-05-29T12:45:37.209Z</updated>
+    
+    <content type="html"><![CDATA[<span id="more"></span><p>读<a href="https://book.douban.com/subject/30468596/">本书</a>的缘由看这里：<a href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/">游戏引擎学习之旅（2）渲染器重构</a>。</p><p>我读完了感觉不错。和<a href="https://book.douban.com/subject/4199740/">《代码整洁之道》</a>一样，我现在还是一个新人，还没有没有遇到什么真实的复杂情况，有些需要重构的坏味道没有遇到，我就是凭我自己的感觉。</p><p>个人来说，他的前几章讲的思想原则就值得去看。</p><ul><li>重构的最佳时机是加入新功能之前；</li><li>重构要小步走；</li><li>何时不该重构；</li><li>重构会让开发更快。</li></ul><p>书的后面就是在讲重构的方法了，提供了一堆术语，方便和别人交流。这些反而就不是很重要了，需要的时候查表就行了。书在最后还贴心得给了一个坏味道与重构手法速查表。</p><p>确实是实用的书，当成词典就行了。</p>]]></content>
+    
+    
+    <summary type="html">是一本久负盛名的书，经常会出现在推荐书单的书。</summary>
+    
+    
+    
+    
+    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
+    
+  </entry>
   
   <entry>
     <title>游戏引擎学习之旅（3）渲染器重构</title>
