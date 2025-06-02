@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-05-29T12:45:37.209Z</updated>
+  <updated>2025-06-02T11:59:47.713Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -17,13 +17,32 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>代码之外的推荐</title>
+    <link href="https://cadenxc.com/2025/06/02/%E4%BB%A3%E7%A0%81%E4%B9%8B%E5%A4%96%E7%9A%84%E6%8E%A8%E8%8D%90/"/>
+    <id>https://cadenxc.com/2025/06/02/%E4%BB%A3%E7%A0%81%E4%B9%8B%E5%A4%96%E7%9A%84%E6%8E%A8%E8%8D%90/</id>
+    <published>2025-06-02T11:59:47.000Z</published>
+    <updated>2025-06-02T11:59:47.713Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="浏览器插件"><a href="#浏览器插件" class="headerlink" title="浏览器插件"></a>浏览器插件</h2><ul><li><a href="https://microsoftedge.microsoft.com/addons/detail/onetab/hoimpamkkoehapgenciaoajfkfkpgfop">OneTab</a>：压缩页面，减少内存占用，方便搜集临时的不想的收藏的页面；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/get-rss-feed-url/pgbelohmepchkohpdldadopkblkgbjom">Get RSS Feed URL</a>：获取当前网页的RSS订阅；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/%E5%BE%AE%E4%BF%A1%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%E5%8A%A9%E6%89%8B/iblnlnnpkbhnempmcbioeholmemingmo">微信读书笔记助手</a>：复制网页版微信读书画线评论。</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/immersive-translate-tra/amkbmndfnliijdhojkpoglbnaaahippg">Immersive Translate</a>：内嵌式网页翻译；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/marinara-pomodoro%C2%AE-assis/ncpfbgmhdpgbgmdmkfcddiemjhebegin">Marinara: Pomodoro® Assistant</a>：一个番茄工作法的番茄钟。</li></ul><h2 id="Windows工具"><a href="#Windows工具" class="headerlink" title="Windows工具"></a>Windows工具</h2><ul><li><a href="https://www.sumatrapdfreader.org/free-pdf-reader">Sumatra PDF</a>：功能强大的读书软件，可以打开种电子书格式；</li><li><a href="https://rime.im/">小狼毫输入法</a>：好用的输入法软件；</li><li><a href="https://keepass.info/download.html">KeePass</a>：密码管理工具；</li><li><a href="https://geekuninstaller.com/">Geek</a>：知名卸载工具；</li><li><a href="https://sourceforge.net/projects/spacesniffer/">SpaceSniffer</a>：磁盘空间分析软件；</li><li><a href="https://github.com/easymodo/qimgv">qimgv</a>：图片浏览器：觉得Windows自带的图片显示不好用，可以试试这个；</li><li><a href="https://pixpin.cn/">PixPin</a>：截图贴图工具；</li><li><a href="https://apps.microsoft.com/detail/xp8bsbgqw2dks0?hl=zh-cn&gl=cn">PotPlayer</a>：可能是最好用的视频播放器；</li><li><a href="https://github.com/Wox-launcher/Wox">Wox</a>：调用了<a href="https://www.voidtools.com/zh-cn/">Everything</a>的软件快速启动器；</li><li><a href="https://obsidian.md/">Obsidian</a>：markdown笔记软件我选的这个，免费，双链笔记功能强大，推荐配合<a href="https://notes.oldwinter.top/%E5%B8%B8%E9%9D%92%E7%AC%94%E8%AE%B0">常青笔记</a>，<a href="https://forum-zh.obsidian.md/t/topic/134">下载插件</a>能让软件更好用；</li><li><a href="https://steampp.net/">Watt Toolkit</a>：加速器，连接 Github 和 Steam；</li><li><a href="https://mfiles.maokebing.com/">爱传送</a>：手机和电脑跨平台传送文件；</li><li><a href="https://zh-cn.libreoffice.org/">LibreOffice</a>：Wps和Micro Office的开源平替；</li><li><a href="https://www.gimp.org/">GIMP</a>：Adobe Photoshop 的开源平替；</li><li><a href="https://uuyc.163.com/">网易UU远程</a>：远程控制电脑；</li><li><a href="https://obsproject.com/?ref=openalternative.co">OBS</a>：开源视频录制软件；</li><li><a href="https://tortoisegit.org/">TortoiseGit</a>：图形化的Git，更好操作Git。推荐给不想敲Git命令行的人；</li><li><a href="https://cubox.pro/">Cubox - 你的超强阅读学习助手</a>：跨平台浏览器页面管理。</li></ul><h2 id="安卓App"><a href="#安卓App" class="headerlink" title="安卓App"></a>安卓App</h2><p>在应用商店、github或者浏览器上能找到：</p><ul><li><a href="https://github.com/foobnix/LibreraReader">Librera</a>：打开Txt，PDF，Mobi等各种格式的文件，用来读书；</li><li><a href="https://weread.qq.com/">微信读书</a>：电子书书城，阅读购买电子书；</li><li><a href="https://flomoapp.com/">flomo</a>：有浏览器页面，互传文字挺方便。</li><li><a href="https://habitica.com/">Habitica</a>：游戏化任务管理。</li><li>小宇宙：听播客；</li><li>ZArchiver&#x2F;MT Manager：手机文件管理，压缩包解压。</li><li>Rolly RSS阅读器：RSS阅读工具。</li><li>小青帐：记账软件。</li></ul><h2 id="推荐学习的技能"><a href="#推荐学习的技能" class="headerlink" title="推荐学习的技能"></a>推荐学习的技能</h2><ul><li><a href="https://api.ihint.me/shuang/">双拼练习</a>：一种打字拼音输入法，有多种映射方式，选一种即可；</li><li><a href="https://markdown.com.cn/intro.html#markdown-%E6%98%AF%E4%BB%80%E4%B9%88">Markdown</a>：轻量级的标记语言；</li><li><a href="https://www.overleaf.com/learn">Latex</a>：一种编程语言，方便排版，写论文用；</li></ul>]]></content>
+    
+    
+    <summary type="html">推荐一些非技术相关的各种软件/浏览器插件/技能。</summary>
+    
+    
+    
+    
+    <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
+    
+  </entry>
+  
+  <entry>
     <title>《重构 改善既有代码的设计》简评</title>
     <link href="https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/"/>
     <id>https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/</id>
     <published>2025-05-29T12:43:21.000Z</published>
-    <updated>2025-05-29T12:45:37.209Z</updated>
+    <updated>2025-05-29T12:47:52.289Z</updated>
     
-    <content type="html"><![CDATA[<span id="more"></span><p>读<a href="https://book.douban.com/subject/30468596/">本书</a>的缘由看这里：<a href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/">游戏引擎学习之旅（2）渲染器重构</a>。</p><p>我读完了感觉不错。和<a href="https://book.douban.com/subject/4199740/">《代码整洁之道》</a>一样，我现在还是一个新人，还没有没有遇到什么真实的复杂情况，有些需要重构的坏味道没有遇到，我就是凭我自己的感觉。</p><p>个人来说，他的前几章讲的思想原则就值得去看。</p><ul><li>重构的最佳时机是加入新功能之前；</li><li>重构要小步走；</li><li>何时不该重构；</li><li>重构会让开发更快。</li></ul><p>书的后面就是在讲重构的方法了，提供了一堆术语，方便和别人交流。这些反而就不是很重要了，需要的时候查表就行了。书在最后还贴心得给了一个坏味道与重构手法速查表。</p><p>确实是实用的书，当成词典就行了。</p>]]></content>
+    <content type="html"><![CDATA[<p>读<a href="https://book.douban.com/subject/30468596/">本书</a>的缘由看这里：<a href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/">游戏引擎学习之旅（2）渲染器重构</a>。</p><p>我读完了感觉不错。和<a href="https://book.douban.com/subject/4199740/">《代码整洁之道》</a>一样，我现在还是一个新人，还没有没有遇到什么真实的复杂情况，有些需要重构的坏味道没有遇到，我就是凭我自己的感觉。</p><p>个人来说，他的前几章讲的思想原则就值得去看。</p><ul><li>重构的最佳时机是加入新功能之前；</li><li>重构要小步走；</li><li>何时不该重构；</li><li>重构会让开发更快。</li></ul><p>书的后面就是在讲重构的方法了，提供了一堆术语，方便和别人交流。这些反而就不是很重要了，需要的时候查表就行了。书在最后还贴心得给了一个坏味道与重构手法速查表。</p><p>确实是实用的书，当成词典就行了。</p>]]></content>
     
     
     <summary type="html">是一本久负盛名的书，经常会出现在推荐书单的书。</summary>
