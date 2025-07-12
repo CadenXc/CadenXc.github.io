@@ -102,7 +102,7 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: 'git'
-  repo: 'https://github.com/CadenXc/myblog-source.git'
+  repo: 'git@github.com:CadenXc/myblog-source.git'
   branch: 'main'
 
 server:
