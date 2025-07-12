@@ -102,8 +102,8 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: 'git'
-  repo: 'git@github.com:CadenXc/CadenXc.github.io.git'
-  branch: 'master'
+  repo: 'https://github.com/CadenXc/myblog-source.git'
+  branch: 'main'
 
 server:
   port: 5000
