@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="q6PJ4n4-hg7M6808bSTmo48n16zCKxZaaavSncOUqHE">
+  <meta name="msvalidate.01" content="27D21BE0E495214EDC16E2B2A2A67C0D">
+  <meta name="yandex-verification" content="e9f5d8f7f54a6605">
+  <meta name="baidu-site-verification" content="codeva-8ldPwABxwl">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="/fonts.proxy.ustclug.org/css?family=Lato:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-material.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2},"disqus":{"text":"Load Disqus","order":-1}},"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta property="og:type" content="article">
+<meta property="og:title" content="实现倒角立方体">
+<meta property="og:url" content="https://cadenxc.com/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/index.html">
+<meta property="og:site_name" content="CadenXc&#39;s Blog">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-08-16T13:03:30.000Z">
+<meta property="article:modified_time" content="2025-08-16T13:10:15.915Z">
+<meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="UE">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="程序化网格体">
+<meta property="article:tag" content="ProceduralMeshComponent">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://cadenxc.com/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>实现倒角立方体 | CadenXc's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="CadenXc's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CadenXc's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/CadenXc/CadenXc.github.io" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          实现倒角立方体
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-08-16 21:03:30 / 修改时间：21:10:15" itemprop="dateCreated datePublished" datetime="2025-08-16T21:03:30+08:00">2025-08-16</time>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+            <div class="post-description">实现倒角立方体。记录一下我的学习经历。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="从平面到立体"><a href="#从平面到立体" class="headerlink" title="从平面到立体"></a>从平面到立体</h2><p>先实现是个普通的立方体。<br>一个普通的立方体对大家来说想必难度不大，我们来实现一个倒角立方体。<br>前面我们生成里了一个三角形，这次我们来做一个倒角立方体。它有三个参数，</p>
+<ul>
+<li><code>CubeSize</code> (立方体的尺寸)</li>
+</ul>
+<h2 id="实现基础立方体"><a href="#实现基础立方体" class="headerlink" title="实现基础立方体"></a>实现基础立方体</h2><p>我们需要的参数只有一个 正方体的边长CubeSize</p>
+<p>这个八个点我选择的是以原点（0,0,0）为中心的做法，使用HalfSize为每个点设置值。绘制的流程跟OpenGL类似，这里像是OpenGL的顶点数组。有图形学API的使用经验的，可以想想倒角的算法是怎样的。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">float</span> HalfSize = CubeSize * <span class="number">0.5f</span>;</span><br><span class="line"></span><br><span class="line">TArray&lt;FVector&gt; CorePoints;</span><br><span class="line">CorePoints.<span class="built_in">Reserve</span>(<span class="number">8</span>);</span><br><span class="line"></span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(-HalfSize, -HalfSize, -HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(HalfSize, -HalfSize, -HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(-HalfSize, HalfSize, -HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(HalfSize, HalfSize, -HalfSize));</span><br><span class="line">	CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(-HalfSize, -HalfSize, HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(HalfSize, -HalfSize, HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(-HalfSize, HalfSize, HalfSize));</span><br><span class="line">CorePoints.<span class="built_in">Add</span>(<span class="built_in">FVector</span>(HalfSize, HalfSize, HalfSize));</span><br></pre></td></tr></table></figure>
+
+<p>八个面，用16个三角形既可。<br>生成面的方法是用两个三角形拼在一起组合为一个面。逆时针排序。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// v0, v1, v2, v3 是按逆时针排列的四个顶点</span></span><br><span class="line"> <span class="built_in">AddTriangle</span>(V0, V1, V2);</span><br><span class="line"> <span class="built_in">AddTriangle</span>(V0, V2, V3);</span><br></pre></td></tr></table></figure>
+
+<h2 id="倒角"><a href="#倒角" class="headerlink" title="倒角"></a>倒角</h2><p>这个立方体有两种倒角，边缘倒角和角落倒角。<br>8个主面会向面的中心收缩，所以在就不能使用原始的点，要添加一个参数。<br> <code>BevelSize</code> ：倒角的大小，不能大于半径<br> 还有一个参数用来控制倒角的光滑度。</p>
+<ul>
+<li><code>BevelSegments</code> ：倒角的面数</li>
+</ul>
+<h2 id="边缘倒角"><a href="#边缘倒角" class="headerlink" title="边缘倒角"></a>边缘倒角</h2><p>通过对法线插值来计算下一条倒角边的两个顶点的位置，然后与前面的边相连形成一个倒角面。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">FBevelCubeBuilder::GenerateEdgeBevels</span><span class="params">(<span class="type">const</span> TArray&lt;FVector&gt;&amp; CorePoints)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 边缘倒角定义结构</span></span><br><span class="line">    <span class="keyword">struct</span> <span class="title class_">FEdgeBevelDef</span></span><br><span class="line">    &#123;</span><br><span class="line">        int32 Core1Idx;</span><br><span class="line">        int32 Core2Idx;</span><br><span class="line">        FVector Normal1;</span><br><span class="line">        FVector Normal2;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 定义所有边缘的倒角数据</span></span><br><span class="line">    TArray&lt;FEdgeBevelDef&gt; EdgeDefs = &#123;</span><br><span class="line">        <span class="comment">// +X 方向的边缘</span></span><br><span class="line">        &#123; <span class="number">0</span>, <span class="number">1</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">-1</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">-1</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">2</span>, <span class="number">3</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">-1</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">4</span>, <span class="number">5</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">-1</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">6</span>, <span class="number">7</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>) &#125;,</span><br><span class="line"></span><br><span class="line">        <span class="comment">// +Y 方向的边缘</span></span><br><span class="line">        &#123; <span class="number">0</span>, <span class="number">2</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">-1</span>), <span class="built_in">FVector</span>(<span class="number">-1</span>,<span class="number">0</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">1</span>, <span class="number">3</span>, <span class="built_in">FVector</span>(<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">-1</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">4</span>, <span class="number">6</span>, <span class="built_in">FVector</span>(<span class="number">-1</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">5</span>, <span class="number">7</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">1</span>), <span class="built_in">FVector</span>(<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>) &#125;,</span><br><span class="line"></span><br><span class="line">        <span class="comment">// +Z 方向的边缘</span></span><br><span class="line">        &#123; <span class="number">0</span>, <span class="number">4</span>, <span class="built_in">FVector</span>(<span class="number">-1</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">-1</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">1</span>, <span class="number">5</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">-1</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">2</span>, <span class="number">6</span>, <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">-1</span>,<span class="number">0</span>,<span class="number">0</span>) &#125;,</span><br><span class="line">        &#123; <span class="number">3</span>, <span class="number">7</span>, <span class="built_in">FVector</span>(<span class="number">1</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">FVector</span>(<span class="number">0</span>,<span class="number">1</span>,<span class="number">0</span>) &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 为每条边生成倒角</span></span><br><span class="line">    <span class="keyword">for</span> (int32 EdgeIndex = <span class="number">0</span>; EdgeIndex &lt; EdgeDefs.<span class="built_in">Num</span>(); ++EdgeIndex)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">const</span> FEdgeBevelDef&amp; EdgeDef = EdgeDefs[EdgeIndex];</span><br><span class="line">               EdgeIndex, EdgeDef.Core1Idx, EdgeDef.Core2Idx);</span><br><span class="line">        </span><br><span class="line">        <span class="built_in">GenerateEdgeStrip</span>(CorePoints, EdgeDef.Core1Idx, EdgeDef.Core2Idx, EdgeDef.Normal1, EdgeDef.Normal2);</span><br><span class="line">        </span><br><span class="line">               EdgeIndex, MeshData.<span class="built_in">GetVertexCount</span>());</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">           MeshData.<span class="built_in">GetVertexCount</span>(), MeshData.<span class="built_in">GetTriangleCount</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">FBevelCubeBuilder::GenerateEdgeStrip</span><span class="params">(<span class="type">const</span> TArray&lt;FVector&gt;&amp; CorePoints, int32 Core1Idx, int32 Core2Idx, </span></span></span><br><span class="line"><span class="params"><span class="function">                                         <span class="type">const</span> FVector&amp; Normal1, <span class="type">const</span> FVector&amp; Normal2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">           Core1Idx, Core2Idx);</span><br><span class="line">    </span><br><span class="line">    TArray&lt;int32&gt; PrevStripStartIndices;</span><br><span class="line">    TArray&lt;int32&gt; PrevStripEndIndices;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (int32 s = <span class="number">0</span>; s &lt;= Params.BevelSections; ++s)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> Alpha = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>&gt;(s) / Params.BevelSections;</span><br><span class="line">        FVector CurrentNormal = FMath::<span class="built_in">Lerp</span>(Normal1, Normal2, Alpha).<span class="built_in">GetSafeNormal</span>();</span><br><span class="line"></span><br><span class="line">        FVector PosStart = CorePoints[Core1Idx] + CurrentNormal * Params.BevelSize;</span><br><span class="line">        FVector PosEnd = CorePoints[Core2Idx] + CurrentNormal * Params.BevelSize;</span><br><span class="line"></span><br><span class="line">        <span class="function">FVector2D <span class="title">UV1</span><span class="params">(Alpha, <span class="number">0.0f</span>)</span></span>;</span><br><span class="line">        <span class="function">FVector2D <span class="title">UV2</span><span class="params">(Alpha, <span class="number">1.0f</span>)</span></span>;</span><br><span class="line"></span><br><span class="line">        int32 VtxStart = <span class="built_in">GetOrAddVertex</span>(PosStart, CurrentNormal, UV1);</span><br><span class="line">        int32 VtxEnd = <span class="built_in">GetOrAddVertex</span>(PosEnd, CurrentNormal, UV2);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (s &gt; <span class="number">0</span> &amp;&amp; PrevStripStartIndices.<span class="built_in">Num</span>() &gt; <span class="number">0</span> &amp;&amp; PrevStripEndIndices.<span class="built_in">Num</span>() &gt; <span class="number">0</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">AddQuad</span>(PrevStripStartIndices[<span class="number">0</span>], PrevStripEndIndices[<span class="number">0</span>], VtxEnd, VtxStart);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        PrevStripStartIndices = &#123; VtxStart &#125;;</span><br><span class="line">        PrevStripEndIndices = &#123; VtxEnd &#125;;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="角落倒角"><a href="#角落倒角" class="headerlink" title="角落倒角"></a>角落倒角</h2><p>思路一样。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">FBevelCubeBuilder::GenerateCornerBevels</span><span class="params">(<span class="type">const</span> TArray&lt;FVector&gt;&amp; CorePoints)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (CorePoints.<span class="built_in">Num</span>() &lt; <span class="number">8</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">UE_LOG</span>(LogTemp, Error, <span class="built_in">TEXT</span>(<span class="string">&quot;Invalid CorePoints array size. Expected 8 elements.&quot;</span>));</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 为每个角落生成倒角</span></span><br><span class="line">    <span class="keyword">for</span> (int32 CornerIndex = <span class="number">0</span>; CornerIndex &lt; <span class="number">8</span>; ++CornerIndex)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">const</span> FVector&amp; CurrentCorePoint = CorePoints[CornerIndex];</span><br><span class="line">		<span class="comment">// 这里的四个需要反转渲染方向的倒角是我在实现实现中面的渲染方向反了的。</span></span><br><span class="line">		<span class="comment">//这里我没有多调，也许用不同的连接方法可以更优雅一些。</span></span><br><span class="line">        <span class="type">bool</span> bSpecialCornerRenderingOrder = (CornerIndex == <span class="number">4</span> || CornerIndex == <span class="number">7</span> || CornerIndex == <span class="number">2</span> || CornerIndex == <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="comment">// 计算角落的轴向</span></span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> SignX = FMath::<span class="built_in">Sign</span>(CurrentCorePoint.X);</span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> SignY = FMath::<span class="built_in">Sign</span>(CurrentCorePoint.Y);</span><br><span class="line">        <span class="type">const</span> <span class="type">float</span> SignZ = FMath::<span class="built_in">Sign</span>(CurrentCorePoint.Z);</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="type">const</span> FVector <span class="title">AxisX</span><span class="params">(SignX, <span class="number">0.0f</span>, <span class="number">0.0f</span>)</span></span>;</span><br><span class="line">        <span class="function"><span class="type">const</span> FVector <span class="title">AxisY</span><span class="params">(<span class="number">0.0f</span>, SignY, <span class="number">0.0f</span>)</span></span>;</span><br><span class="line">        <span class="function"><span class="type">const</span> FVector <span class="title">AxisZ</span><span class="params">(<span class="number">0.0f</span>, <span class="number">0.0f</span>, SignZ)</span></span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 创建顶点网格</span></span><br><span class="line">        TArray&lt;TArray&lt;int32&gt;&gt; CornerVerticesGrid;</span><br><span class="line">        CornerVerticesGrid.<span class="built_in">SetNum</span>(Params.BevelSections + <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (int32 Lat = <span class="number">0</span>; Lat &lt;= Params.BevelSections; ++Lat)</span><br><span class="line">        &#123;</span><br><span class="line">            CornerVerticesGrid[Lat].<span class="built_in">SetNum</span>(Params.BevelSections + <span class="number">1</span> - Lat);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 生成四分之一球体的顶点</span></span><br><span class="line">        <span class="keyword">for</span> (int32 Lat = <span class="number">0</span>; Lat &lt;= Params.BevelSections; ++Lat)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">for</span> (int32 Lon = <span class="number">0</span>; Lon &lt;= Params.BevelSections - Lat; ++Lon)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="type">const</span> <span class="type">float</span> LonAlpha = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>&gt;(Lon) / Params.BevelSections;</span><br><span class="line">                <span class="type">const</span> <span class="type">float</span> LatAlpha = <span class="built_in">static_cast</span>&lt;<span class="type">float</span>&gt;(Lat) / Params.BevelSections;</span><br><span class="line"></span><br><span class="line">                TArray&lt;FVector&gt; Vertices = <span class="built_in">GenerateCornerVertices</span>(CurrentCorePoint, AxisX, AxisY, AxisZ, Lat, Lon);</span><br><span class="line">                <span class="keyword">if</span> (Vertices.<span class="built_in">Num</span>() &gt; <span class="number">0</span>)</span><br><span class="line">                &#123;</span><br><span class="line">                    FVector CurrentNormal = (AxisX * (<span class="number">1.0f</span> - LatAlpha - LonAlpha) +</span><br><span class="line">                        AxisY * LatAlpha +</span><br><span class="line">                        AxisZ * LonAlpha);</span><br><span class="line">                    CurrentNormal.<span class="built_in">Normalize</span>();</span><br><span class="line"></span><br><span class="line">                    <span class="function">FVector2D <span class="title">UV</span><span class="params">(LonAlpha, LatAlpha)</span></span>;</span><br><span class="line">                    CornerVerticesGrid[Lat][Lon] = <span class="built_in">GetOrAddVertex</span>(Vertices[<span class="number">0</span>], CurrentNormal, UV);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 生成四分之一球体的三角形</span></span><br><span class="line">        <span class="keyword">for</span> (int32 Lat = <span class="number">0</span>; Lat &lt; Params.BevelSections; ++Lat)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">for</span> (int32 Lon = <span class="number">0</span>; Lon &lt; Params.BevelSections - Lat; ++Lon)</span><br><span class="line">            &#123;</span><br><span class="line">                <span class="built_in">GenerateCornerTriangles</span>(CornerVerticesGrid, Lat, Lon, bSpecialCornerRenderingOrder);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">FBevelCubeBuilder::GenerateCornerTriangles</span><span class="params">(<span class="type">const</span> TArray&lt;TArray&lt;int32&gt;&gt;&amp; CornerVerticesGrid, </span></span></span><br><span class="line"><span class="params"><span class="function">                                               int32 Lat, int32 Lon, <span class="type">bool</span> bSpecialOrder)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="type">const</span> int32 V00 = CornerVerticesGrid[Lat][Lon];</span><br><span class="line">    <span class="type">const</span> int32 V10 = CornerVerticesGrid[Lat + <span class="number">1</span>][Lon];</span><br><span class="line">    <span class="type">const</span> int32 V01 = CornerVerticesGrid[Lat][Lon + <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (bSpecialOrder)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">AddTriangle</span>(V00, V01, V10);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">AddTriangle</span>(V00, V10, V01);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (Lon + <span class="number">1</span> &lt; CornerVerticesGrid[Lat + <span class="number">1</span>].<span class="built_in">Num</span>())</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">const</span> int32 V11 = CornerVerticesGrid[Lat + <span class="number">1</span>][Lon + <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (bSpecialOrder)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">AddTriangle</span>(V10, V01, V11);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">        &#123;</span><br><span class="line">            <span class="built_in">AddTriangle</span>(V10, V11, V01);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/UE/" rel="tag"># UE</a>
+              <a href="/tags/C/" rel="tag"># C++</a>
+              <a href="/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/" rel="tag"># 程序化网格体</a>
+              <a href="/tags/ProceduralMeshComponent/" rel="tag"># ProceduralMeshComponent</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2025/08/02/%E5%9C%A8%E8%99%9A%E5%B9%BB%E5%BC%95%E6%93%8E%E4%B8%AD%E7%94%A8%E4%BB%A3%E7%A0%81%E7%94%9F%E6%88%90%E7%BD%91%E6%A0%BC%E4%BD%93%EF%BC%9A%E5%9F%BA%E7%A1%80%E5%85%A5%E9%97%A8/" rel="prev" title="在虚幻引擎中用代码生成网格体：基础入门">
+      <i class="fa fa-chevron-left"></i> 在虚幻引擎中用代码生成网格体：基础入门
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="valine-comments"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E5%B9%B3%E9%9D%A2%E5%88%B0%E7%AB%8B%E4%BD%93"><span class="nav-number">1.</span> <span class="nav-text">从平面到立体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%9F%BA%E7%A1%80%E7%AB%8B%E6%96%B9%E4%BD%93"><span class="nav-number">2.</span> <span class="nav-text">实现基础立方体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%80%92%E8%A7%92"><span class="nav-number">3.</span> <span class="nav-text">倒角</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BE%B9%E7%BC%98%E5%80%92%E8%A7%92"><span class="nav-number">4.</span> <span class="nav-text">边缘倒角</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%92%E8%90%BD%E5%80%92%E8%A7%92"><span class="nav-number">5.</span> <span class="nav-text">角落倒角</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="CadenXc"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">CadenXc</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">12</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/CadenXc/CadenXc.github.io" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc&#x2F;CadenXc.github.io" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:xiangchen1492022@outlook.com" title="E-Mail → mailto:xiangchen1492022@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title"><i class="fa fa-link fa-fw"></i>
+      Links
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="https://space.bilibili.com/546154829/" title="https:&#x2F;&#x2F;space.bilibili.com&#x2F;546154829&#x2F;" rel="noopener" target="_blank">bilibili</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">CadenXc</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+if (document.querySelectorAll('pre.mermaid').length) {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/mermaid@8/dist/mermaid.min.js', () => {
+    mermaid.initialize({
+      theme    : 'forest',
+      logLevel : 3,
+      flowchart: { curve     : 'linear' },
+      gantt    : { axisFormat: '%m/%d/%Y' },
+      sequence : { actorMargin: 50 }
+    });
+  }, window.mermaid);
+}
+</script>
+
+
+  
+
+  
+
+
+<script>
+NexT.utils.loadComments(document.querySelector('#valine-comments'), () => {
+  NexT.utils.getScript('//unpkg.com/valine/dist/Valine.min.js', () => {
+    var GUEST = ['nick', 'mail', 'link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item => {
+      return GUEST.includes(item);
+    });
+    new Valine({
+      el         : '#valine-comments',
+      verify     : false,
+      notify     : true,
+      appId      : 'BME1z3uLeMKGwPhYmjzildUo-gzGzoHsz',
+      appKey     : 'NdkqEEymzUEvLmZ2xC59pvtg',
+      placeholder: "Just go go",
+      avatar     : 'mm',
+      meta       : guest,
+      pageSize   : '10' || 10,
+      visitor    : false,
+      lang       : '' || 'zh-cn',
+      path       : location.pathname,
+      recordIP   : false,
+      serverURLs : ''
+    });
+  }, window.Valine);
+});
+</script>
+
+</body>
+</html>
