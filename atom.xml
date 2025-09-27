@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-09-27T04:15:48.109Z</updated>
+  <updated>2025-09-27T09:20:25.819Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,29 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>自定义模型的法线和UV杂谈</title>
+    <link href="https://cadenxc.com/2025/09/27/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%B3%95%E7%BA%BF%E5%92%8CUV%E6%9D%82%E8%B0%88/"/>
+    <id>https://cadenxc.com/2025/09/27/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%B3%95%E7%BA%BF%E5%92%8CUV%E6%9D%82%E8%B0%88/</id>
+    <published>2025-09-27T09:18:41.000Z</published>
+    <updated>2025-09-27T09:20:25.819Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="法线"><a href="#法线" class="headerlink" title="法线"></a>法线</h2><p>法线是顶点的属性。与模型的光滑组（软硬边）有关。软边就让法线用相邻的面法线做插值，硬边就是同一个顶点上有多个相邻面的面法线。<br>改法线是硬边或软边比较简单，如果是要实现特定的法线方向就没有这么简单了。</p><h2 id="UV"><a href="#UV" class="headerlink" title="UV"></a>UV</h2><p>UV 的范围是(0,0到1,1)<br>要做的就是把所有的分配到UV空间里。<br>模型的顶点对应在UV图里有一个UV坐标。在添加顶点的时候要确定顶点的3D空间的坐标和UV上的坐标。</p><p>UV的生成与顶点有关，所以为了美术方便，在添加UV时需要考虑顶点的位置，所以我的BevelCube这个模型在后面就改过了生成的逻辑。就分为了主面和倒角面，倒角部分就不细分了。<br>UV的本质是把顶点映射到UV平面上。给这个顶点指定一个UV图上的位置。</p><p>也许在一开始就和美术对对UV比较好，这样可以对模型网格生成有帮助，少走弯路。</p><p>UV是可以超过这个区域的（和我对接的美术说可以）；也可以重叠，比如正方体的六个面就放在这个 1 x 1 的区域完全重叠就好。</p><hr><p>仓库链接：<a href="https://gitee.com/satoshi657/moden-gen">ModenGen: Ue4使用ProceduralMeshComponent生成自定义模型。</a></p>]]></content>
+    
+    
+    <summary type="html">最近给模型添加法线和UV的想法。</summary>
+    
+    
+    
+    
+    <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
+    
+    <category term="法线" scheme="https://cadenxc.com/tags/%E6%B3%95%E7%BA%BF/"/>
+    
+    <category term="UV" scheme="https://cadenxc.com/tags/UV/"/>
+    
+  </entry>
   
   <entry>
     <title>ProceduralMesh转StaticMesh</title>
