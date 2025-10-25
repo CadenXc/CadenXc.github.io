@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2025-09-27T09:20:25.819Z</updated>
+  <updated>2025-10-25T07:12:33.437Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,29 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>序列化与反序列化：游戏存档背后的魔法</title>
+    <link href="https://cadenxc.com/2025/10/25/%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%EF%BC%9A%E6%B8%B8%E6%88%8F%E5%AD%98%E6%A1%A3%E8%83%8C%E5%90%8E%E7%9A%84%E9%AD%94%E6%B3%95/"/>
+    <id>https://cadenxc.com/2025/10/25/%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%EF%BC%9A%E6%B8%B8%E6%88%8F%E5%AD%98%E6%A1%A3%E8%83%8C%E5%90%8E%E7%9A%84%E9%AD%94%E6%B3%95/</id>
+    <published>2025-10-25T07:07:37.000Z</published>
+    <updated>2025-10-25T07:12:33.437Z</updated>
+    
+    <content type="html"><![CDATA[<h3 id="1-核心概念：存档与读档的艺术"><a href="#1-核心概念：存档与读档的艺术" class="headerlink" title="1. 核心概念：存档与读档的艺术"></a>1. 核心概念：存档与读档的艺术</h3><p>序列化与反序列化是程序设计中实现数据持久化的核心机制，我们可以用 RPG 游戏的“存档”和“读档”来形象理解它们。</p><h4 id="1-1-序列化-Serialization-存档"><a href="#1-1-序列化-Serialization-存档" class="headerlink" title="1.1 序列化 (Serialization) ~ 存档"></a>1.1 序列化 (Serialization) ~ 存档</h4><p><strong>序列化</strong>是将程序中复杂的内存对象（如自定义模型、类实例、角色状态等）转化为一种可存储或可传输的<strong>线性字节流</strong>的过程。</p><ul><li><strong>目标：</strong> 将对象从瞬时的内存状态固化，以便存入文件或进行传输。</li></ul><h4 id="1-2-反序列化-Deserialization-读档"><a href="#1-2-反序列化-Deserialization-读档" class="headerlink" title="1.2 反序列化 (Deserialization) ~ 读档"></a>1.2 反序列化 (Deserialization) ~ 读档</h4><p><strong>反序列化</strong>是序列化的逆过程，它负责解析存储介质中的<strong>字节流</strong>，将其重新构建为程序能识别的<strong>内存对象</strong>，从而完整还原之前的状态。</p><ul><li><strong>目标：</strong> 通过读取存储数据，重建运行时对象，恢复程序进度。</li></ul><hr><h3 id="2-实战应用：在现有系统上添加新的本地资源"><a href="#2-实战应用：在现有系统上添加新的本地资源" class="headerlink" title="2. 实战应用：在现有系统上添加新的本地资源"></a>2. 实战应用：在现有系统上添加新的本地资源</h3><p>我的需求是为<strong>自定义模型类型</strong>创建一个<strong>新的本地资源类型</strong>，目的是将模型的参数、类别等信息持久化到本地文件。由于这是一个本地功能（类似于一个 UE 插件的内部存储），且项目约定使用<strong>文本文件（如 JSON）</strong> 进行存储，因此我的工作重点是集成和扩展现有资源系统。</p><h4 id="2-1-现有序列化系统的运作流程（学习理解）"><a href="#2-1-现有序列化系统的运作流程（学习理解）" class="headerlink" title="2.1 现有序列化系统的运作流程（学习理解）"></a>2.1 现有序列化系统的运作流程（学习理解）</h4><p>通过参考同事的指导和已有的项目代码，我理解了一个成熟的资源加载系统通常遵循以下流程：</p><p><strong>A. 资源注册与系统启动</strong></p><ol><li><strong>特定目录扫描：</strong> 项目启动时，系统会遍历本地资源存储的默认目录。</li><li><strong>资源识别：</strong> 系统会读取文件，识别其<strong>资源类型</strong>和<strong>唯一标识符</strong>（通常是 <strong>GUID&#x2F;UUID</strong>）。</li><li><strong>系统注册：</strong> 所有资源类型必须预先在系统内完成注册，这是系统识别和处理新资源类型的前提。</li></ol><p><strong>B. 反序列化入口与依赖加载</strong></p><ol><li><strong>反序列化入口：</strong> 任何需要加载的“场景”或“进度”（如 UE 的 Level 文件或存档文件）都充当反序列化的起始点。</li><li><strong>依赖引用：</strong> 这个入口文件并不存储所有资源的完整数据，而是存储了它所依赖的<strong>其他资源文件</strong>的 <strong>GUID</strong>。</li><li><strong>级联加载：</strong> 反序列化系统会自动读取这些 GUID，并触发相应资源的加载和反序列化，从而实现<strong>加载一个文件，还原一个完整对象集合</strong>的功能。</li></ol><h4 id="2-2-在现有系统中添加新资源类型"><a href="#2-2-在现有系统中添加新资源类型" class="headerlink" title="2.2 在现有系统中添加新资源类型"></a>2.2 在现有系统中添加新资源类型</h4><p>我的核心工作是在现有框架下添加支持我自定义模型的数据类型，并实现相应的读写逻辑：</p><ol><li><strong>定义数据结构：</strong> 确定我的模型参数信息如何映射到项目约定的文本格式（例如 JSON 结构）。</li><li><strong>实现解析工具：</strong><ul><li><strong>序列化器 (Serializer)：</strong> 编写逻辑将内存中的模型对象<strong>写入</strong>到本地的资源文本文件中。</li><li><strong>反序列化器 (Deserializer)：</strong> 编写逻辑从资源文本文件中<strong>读取</strong>数据，并将其<strong>重建</strong>为内存中的模型对象。</li></ul></li></ol><p>我的方法是参考项目中已经存在的资源类型实现，通过“模仿”和“扩展”来确保我的新资源类型能够被系统正确地注册和加载。</p>]]></content>
+    
+    
+    <summary type="html">经过一周与反序列化的斗智斗勇，来讲讲学到的反序列化相关知识。文本有AI润色。</summary>
+    
+    
+    
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
+    
+    <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="序列化" scheme="https://cadenxc.com/tags/%E5%BA%8F%E5%88%97%E5%8C%96/"/>
+    
+  </entry>
   
   <entry>
     <title>自定义模型的法线和UV杂谈</title>
@@ -355,9 +378,9 @@
     <link href="https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/"/>
     <id>https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/</id>
     <published>2025-04-27T10:26:23.000Z</published>
-    <updated>2025-05-27T03:12:28.000Z</updated>
+    <updated>2025-10-01T13:17:37.491Z</updated>
     
-    <content type="html"><![CDATA[<p><a href="https://book.douban.com/subject/1477390/">《代码大全》</a>我读了两遍，先是读到英文版，后来又读了一边中文版。<br>读英文版时，我还想着“routine”该怎么翻译，结果看中文翻译翻成了“子程序”，意思没原文丰富。中英文版都不错完全推荐。</p><p>这本书讲的内容真的是软件工程的基础，跟我看完了感觉在各个方面长见识，但又很难说是什么，感觉就是为设计软件打了地基，知识成为了我的血液。书里的代码编写、变量命名、注释等我在其他的书籍视频里看过好几次，这本书把软件的方方面面串联起来，给了我一个大的画画。先读这本书会为软件工程打一个很好的基础。</p><p>全书令我影响深刻的观点论述有：</p><ul><li>用隐喻来学习；</li><li>软件工程就是管理复杂度；</li><li>不要陷进语言，自己定义用法；</li><li>伪代码编程过程；</li><li>最后几章的关于人的个性，布局排版的艺术。</li></ul><p>有些东西确实不太懂，毕竟我还没有在真实的工业环境里工作过，设计、编码、测试等技能没有经过检验。不只这本书，《clean code》里的后半部分我就不懂；《程序开发心理学》我读得挺有意思，但是每章结束后问管理者和程序员的问题我无法回答；不过《人月神话》没有讨论什么技术，谈的是思想，写得也好，不愧对它的声誉。</p>]]></content>
+    <content type="html"><![CDATA[<p><a href="https://book.douban.com/subject/1477390/">《代码大全》</a>我读了两遍，先是读到英文版，后来又读了一边中文版。<br>读英文版时，我还想着“routine”该怎么翻译，结果看中文翻译翻成了“子程序”，意思没原文丰富。中英文版都不错完全推荐。</p><p>这本书讲的内容真的是软件工程的基础，跟我看完了感觉在各个方面长见识，但又很难说是什么，感觉就是为设计软件打了地基，知识成为了我的血液。书里的代码编写、变量命名、注释等我在其他的书籍视频里看过好几次，这本书把软件的方方面面串联起来，给了我一个大的脉络。先读这本书会为软件工程打一个很好的基础。</p><p>全书令我影响深刻的观点论述有：</p><ul><li>用隐喻来学习；</li><li>软件工程就是管理复杂度；</li><li>不要陷进语言，自己定义用法；</li><li>伪代码编程过程；</li><li>最后几章的关于人的个性，布局排版的艺术。</li></ul><p>有些东西确实不太懂，毕竟我还没有在真实的工业环境里工作过，设计、编码、测试等技能没有经过检验。不只这本书，《clean code》里的后半部分我就不懂；《程序开发心理学》我读得挺有意思，但是每章结束后问管理者和程序员的问题我无法回答；不过《人月神话》没有讨论什么技术，谈的是思想，写得也好，不愧对它的声誉。</p>]]></content>
     
     
     <summary type="html">《代码大全》（code complete），非常有名的书籍，虽然现在的版本还是2004年出的，依然没有过时。</summary>
