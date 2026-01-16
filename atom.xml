@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-01-03T15:22:30.926Z</updated>
+  <updated>2026-01-16T13:21:04.426Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,31 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>可编辑曲面性能优化</title>
+    <link href="https://cadenxc.com/2026/01/16/%E5%8F%AF%E7%BC%96%E8%BE%91%E6%9B%B2%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    <id>https://cadenxc.com/2026/01/16/%E5%8F%AF%E7%BC%96%E8%BE%91%E6%9B%B2%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</id>
+    <published>2026-01-16T13:20:22.000Z</published>
+    <updated>2026-01-16T13:21:04.426Z</updated>
+    
+    <content type="html"><![CDATA[<p>之前的可编辑模型(如正方体，圆台）不涉及复杂的性能瓶颈，但是可编辑曲面不同。它的本质是沿着样条线（Spline）动态生成的拓扑结构，其顶点数量没有硬性上限，而是与<strong>路径长度</strong>、<strong>采样精度</strong>以及<strong>断面复杂度</strong>呈线性甚至几何级数增长。</p><h1 id="优化策略"><a href="#优化策略" class="headerlink" title="优化策略"></a>优化策略</h1><h2 id="埋点分析与耗时监控"><a href="#埋点分析与耗时监控" class="headerlink" title="埋点分析与耗时监控"></a>埋点分析与耗时监控</h2><p>“没有测量就没有优化。” 在盲目优化之前，必须知道瓶颈在哪。实现一个自定义的计时器类（Scoped Timer），在几何生成、碰撞构建等关键函数的入口进行埋点。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">FScopedTimer</span></span><br><span class="line">&#123;</span><br><span class="line">    FString FunctionName;</span><br><span class="line">    <span class="type">double</span> StartTime;</span><br><span class="line"></span><br><span class="line">    <span class="type">static</span> int32 Depth;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">FScopedTimer</span>(FString InName)</span><br><span class="line">        : <span class="built_in">FunctionName</span>(InName)</span><br><span class="line">    &#123;</span><br><span class="line">        StartTime = FPlatformTime::<span class="built_in">Seconds</span>();</span><br><span class="line">        Depth++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ~<span class="built_in">FScopedTimer</span>()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">double</span> EndTime = FPlatformTime::<span class="built_in">Seconds</span>();</span><br><span class="line">        <span class="type">float</span> DurationMs = (<span class="type">float</span>)((EndTime - StartTime) * <span class="number">1000.0</span>);</span><br><span class="line"></span><br><span class="line">        FString Indent = <span class="built_in">TEXT</span>(<span class="string">&quot;&quot;</span>);</span><br><span class="line">        <span class="keyword">for</span> (int32 i = <span class="number">1</span>; i &lt; Depth; ++i)</span><br><span class="line">        &#123;</span><br><span class="line">            Indent += <span class="built_in">TEXT</span>(<span class="string">&quot;  |  &quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        FString LogLine = FString::<span class="built_in">Printf</span>(<span class="built_in">TEXT</span>(<span class="string">&quot;[%s] %s%s: %.4f ms\n&quot;</span>),</span><br><span class="line">            *FDateTime::<span class="built_in">Now</span>().<span class="built_in">ToString</span>(<span class="built_in">TEXT</span>(<span class="string">&quot;%H:%M:%S.%s&quot;</span>)),</span><br><span class="line">            *Indent,</span><br><span class="line">            *FunctionName,</span><br><span class="line">            DurationMs);</span><br><span class="line"></span><br><span class="line">        FString FilePath = FPaths::<span class="built_in">ProjectSavedDir</span>() / <span class="built_in">TEXT</span>(<span class="string">&quot;Profiling/SurfaceGenPerf.txt&quot;</span>);</span><br><span class="line">        FFileHelper::<span class="built_in">SaveStringToFile</span>(LogLine, *FilePath, FFileHelper::EEncodingOptions::AutoDetect, &amp;IFileManager::<span class="built_in">Get</span>(), FILEWRITE_Append);</span><br><span class="line"></span><br><span class="line">        Depth--;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int32 FScopedTimer::Depth = <span class="number">0</span>;</span><br></pre></td></tr></table></figure><h2 id="内存管理：缓存复用与预分配"><a href="#内存管理：缓存复用与预分配" class="headerlink" title="内存管理：缓存复用与预分配"></a>内存管理：缓存复用与预分配</h2><p>C++ 中频繁的内存分配是非常昂贵的</p><ul><li><strong>成员变量缓存：</strong> 将 <code>LeftRailRaw</code>, <code>CachedRawPoints</code> 等高频使用的数组提升为类的成员变量。每次生成时，调用 <code>Reset()</code> 而不是 <code>Empty()</code>。<code>Reset()</code> 会清空数据但保留 <code>Capacity</code>（容量），从而避免了底层的内存释放与重新分配。</li><li><strong>预分配 ：</strong> 在填充数据前，通过 <code>CalculateVertexCountEstimate()</code> 估算大概的顶点数，并调用 <code>MeshData.Reserve()</code>。这避免了 <code>TArray</code> 在 <code>Add</code> 过程中因为扩容而发生的多次数据搬迁。</li></ul><h2 id="智能减面：基于角度的自适应采样"><a href="#智能减面：基于角度的自适应采样" class="headerlink" title="智能减面：基于角度的自适应采样"></a>智能减面：基于角度的自适应采样</h2><p>并非所有的路段都需要同等密度的顶点采样。直线段仅需首尾两点确定，而弯道才需要高密度逼近。</p><ul><li><strong>原理：</strong> 计算相邻线段方向向量的点积：<br>$$\vec{v_1} \cdot \vec{v_2} &#x3D; \cos(\theta)$$<br>如果点积接近 1（例如 <code>&gt; 0.9998</code>），说明线段几乎共线，中间的顶点是冗余的，可以剔除。</li><li><strong>效果：</strong> 在不损失视觉质量的前提下，大幅减少了生成的三角形数量，进而减轻了 GPU 的光栅化压力。</li></ul><h2 id="算法优化：空间哈希加速去环检测"><a href="#算法优化：空间哈希加速去环检测" class="headerlink" title="算法优化：空间哈希加速去环检测"></a>算法优化：空间哈希加速去环检测</h2><p>当曲面发生自我交叉（打结）时，我们需要检测并剔除这些几何体。朴素的去环检测需要 $O(N^2)$ 的暴力比对，顶点过多容易卡死线程。</p><ul><li><p><strong>解决方案：</strong> 引入<strong>空间哈希 (Spatial Hashing)</strong>。</p></li><li><p><strong>实现：</strong> 我们将 3D 空间<strong>投影到 2D 网格</strong>，通过简单的位运算和大质数散射 <code>((X * 73856093) ^ (Y * 19349663)) &amp; (HashSize - 1)</code> 将顶点映射到哈希桶中。之后会执行精确的 <strong>3D 欧氏距离检测</strong>。只要高度（Z轴）差距足够大，即便 2D 投影重叠，也绝不会被错误剔除。</p></li><li><p><strong>提升：</strong> 查询复杂度降至接近 $O(1)$，实现实时拖拽去环。</p></li></ul>]]></content>
+    
+    
+    <summary type="html">性能优化。</summary>
+    
+    
+    
+    
+    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
+    
+    <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
+    
+  </entry>
   
   <entry>
     <title>可编辑模型实现写时复制</title>
@@ -31,13 +56,13 @@
     
     
     
+    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
+    
     <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
-    
-    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
     
   </entry>
   
@@ -415,25 +440,6 @@
     
     
     <summary type="html">&lt;p&gt;视频学到了&lt;a href=&quot;https://www.bilibili.com/video/BV1mw41187Ac?spm_id_from=333.788.videopod.episodes&amp;vd_source=c7d1bbd34d9982d8b421763e8204f67d&amp;p=22&quot;&gt;S022&lt;/a&gt;，分析一下Hazel的事件系统是如何实现的。&lt;/p&gt;</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（1）</title>
-    <link href="https://cadenxc.com/2025/05/12/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%881%EF%BC%89/"/>
-    <id>https://cadenxc.com/2025/05/12/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%881%EF%BC%89/</id>
-    <published>2025-05-12T11:28:57.000Z</published>
-    <updated>2025-05-27T03:14:24.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="现状"><a href="#现状" class="headerlink" title="现状"></a>现状</h2><p>c++：</p><ul><li>学了CS106L，AP-1400，作业大部分完成了；<br>图形学基础：</li><li><a href="https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html">GAMES101</a>的视频课程看完了，作业写到了MVP变换渲染小奶牛。<br>游戏引擎：</li><li><a href="https://games104.boomingtech.com/en/">GAMES104</a>的视频教程视频，没做作业;</li><li>学过<a href="https://www.libsdl.org/">SDL2</a>；</li><li>跟着Brackeys入门了Godot的基本操作，对游戏引擎要实现的有一个基本的概念。<br>软件工程：</li><li>读了一些经典书籍：《代码大全》《人月神话》《软件开发心理学》；</li><li>其他相关：《Doom启示录》。</li></ul><h2 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h2><p>我先是学了两天的<a href="https://www.vulkan.org/">Vulkan</a>，然后看The Cherno 的 游戏引擎系列的s1~s15。</p><p>比较不自量力的是没有学过OpenGL，想着直接跳入Vulkan，自己用Vulkan写视频里的渲染部分代码。然后就发现Vulkan确实复杂，考虑到我以后很长一段时间都会向The Cherno学习，还是先去学习他的OpenGL系列比较好。而且他后面也用Vulkan，学会了OpenGL应该会让我更好学习Vulkan。</p><p>所以我就暂停学习引擎，去学习OpenGL了。现在看了20节的OpenGL，感觉OpenGL确实比Vulkan简单多了。绘制让我想到了SDL2，MVP变换让我想起了GAMES101，许多知识点开始连起来了。</p><h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p>要有自知之明，脚踏实地。</p><p>The Cherno的视频确实很好，我学到了许多。</p><p>我接下来就是学习OpenGL，然后是学习游戏引擎，然后我就可以开始为Godot等开源代码做贡献了。</p><p>游戏和游戏引擎真的很有吸引力。游戏设计我不太懂，但是做游戏引擎的成就感和学到的技术是实打实的。技术成就真的会让我开心。</p><p>接下来的系列文章，大多是我的想法体会。如果你也在学习的路上，不妨来看看。</p>]]></content>
-    
-    
-    <summary type="html">我过去12天的学习经历。</summary>
     
     
     
