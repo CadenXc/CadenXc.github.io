@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-02-02T07:21:04.571Z</updated>
+  <updated>2026-02-02T08:14:06.489Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -17,31 +17,25 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>求职作品演示 (Job Demo Showcase)</title>
+    <title>求职项目展示</title>
     <link href="https://cadenxc.com/2026/02/02/job-demo-showcase/"/>
     <id>https://cadenxc.com/2026/02/02/job-demo-showcase/</id>
     <published>2026-02-02T02:00:00.000Z</published>
-    <updated>2026-02-02T07:21:04.571Z</updated>
+    <updated>2026-02-02T08:14:06.489Z</updated>
     
-    <content type="html"><![CDATA[<p>这里是我的一些求职作品演示视频。</p><h3 id="Getto-Engine-演示"><a href="#Getto-Engine-演示" class="headerlink" title="Getto Engine 演示"></a>Getto Engine 演示</h3><p>这是我使用 C++ 和 SDL2 开发的 2D 游戏引擎演示。</p><video width="100%" controls>  <source src="/videoes/getto.mp4" type="video/mp4">  Your browser does not support the video tag.</video><hr><h3 id="ModelGen-演示"><a href="#ModelGen-演示" class="headerlink" title="ModelGen 演示"></a>ModelGen 演示</h3><p>这是一个程序化建模&#x2F;网格生成工具的演示。</p><video width="100%" controls>  <source src="/videoes/modelgen.mp4" type="video/mp4">  Your browser does not support the video tag.</video><hr><p>希望这些演示能展示我的技术能力。</p>]]></content>
+    <content type="html"><![CDATA[<h3 id="SDL2-2D-平台跳跃游戏"><a href="#SDL2-2D-平台跳跃游戏" class="headerlink" title="SDL2 2D 平台跳跃游戏"></a>SDL2 2D 平台跳跃游戏</h3><p>基于 SDL2 开发的 2D 游戏，C++实现物理，相机，图片等引擎功能模块，有限状态机切换界面。</p><video width="100%" controls>  <source src="/videoes/getto.mp4" type="video/mp4">  您的浏览器不支持播放该视频。</video><p><a href="https://gitee.com/satoshi657/getto">项目源码 (Gitee)</a></p><hr><h3 id="UE4-程序化生成几何体"><a href="#UE4-程序化生成几何体" class="headerlink" title="UE4 程序化生成几何体"></a>UE4 程序化生成几何体</h3><p>实习期间的开发的程序化生成几何体的Ue Demo。</p><video width="100%" controls>  <source src="/videoes/modelgen.mp4" type="video/mp4">  您的浏览器不支持播放该视频。</video><p><a href="https://gitee.com/satoshi657/moden-gen">项目源码 (Gitee)</a></p>]]></content>
     
     
-      
-      
-    <summary type="html">&lt;p&gt;这里是我的一些求职作品演示视频。&lt;/p&gt;
-&lt;h3 id=&quot;Getto-Engine-演示&quot;&gt;&lt;a href=&quot;#Getto-Engine-演示&quot; class=&quot;headerlink&quot; title=&quot;Getto Engine 演示&quot;&gt;&lt;/a&gt;Getto Engine 演示&lt;/</summary>
-      
+    <summary type="html">SDL2 2D 游戏与 UE 程序化生成几何体演示。</summary>
     
     
     
+    
+    <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
     
     <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
     
-    <category term="演示" scheme="https://cadenxc.com/tags/%E6%BC%94%E7%A4%BA/"/>
-    
-    <category term="求职" scheme="https://cadenxc.com/tags/%E6%B1%82%E8%81%8C/"/>
-    
-    <category term="渲染" scheme="https://cadenxc.com/tags/%E6%B8%B2%E6%9F%93/"/>
+    <category term="UE4" scheme="https://cadenxc.com/tags/UE4/"/>
     
   </entry>
   
@@ -60,13 +54,13 @@
     
     
     
-    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
-    
     <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
+    
+    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
     
   </entry>
   
@@ -85,13 +79,13 @@
     
     
     
-    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
-    
     <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
+    
+    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
     
   </entry>
   
