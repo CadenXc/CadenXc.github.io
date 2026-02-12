@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-02-02T08:43:38.662Z</updated>
+  <updated>2026-02-12T05:02:43.433Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,27 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>AI 编码的观点和经验分享</title>
+    <link href="https://cadenxc.com/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/"/>
+    <id>https://cadenxc.com/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/</id>
+    <published>2026-02-12T05:00:47.000Z</published>
+    <updated>2026-02-12T05:02:43.433Z</updated>
+    
+    <content type="html"><![CDATA[<p>这里提到的“AI”，涵盖了我用过的通用大模型（如 GPT, Gemini），以及集成在编辑器中的编程 AI（如 Cursor, Gemini Code Assist 等）。<br><strong>观念：工具的进化</strong></p><p>AI 相当于一个新的工具，我觉得应该尽快学会使用它。我看过一个非常贴切的比喻：在没有 AI 之前，程序员编程好比马车夫驾驶马车；而 AI 的出现，相当于把马车升级为了汽车。</p><p>AI 虽然比马车更加强大，但说到底还是一个工具。我们要做就是尽快学习使用它，完成从“赶马车”到“开汽车”的升级。即使工具升级了，有些东西是不变的——比如“拉客经验”，这就相当于程序员的内功心法：<strong>数据结构与算法</strong>。所以不用担心是否被替代了，这也符合我们斯多葛主义者的精神。</p><p><strong>趋势：从搜索到生成</strong></p><p>传统的浏览器搜索和 <a href="https://stackoverflow.com/questions">Stack Overflow</a> 就像是那辆略显落后的马车。<a href="https://baike.baidu.com/item/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E4%BC%98%E5%8C%96/3132">SEO</a> (搜索引擎优化) 已显颓势，而 <a href="https://www.google.com/search?q=https://baike.baidu.com/item/Geo%25E4%25BC%2598%25E5%258C%2596/65803246">GEO</a> (生成式引擎优化) 则日益火爆。</p><p>我平时有什么问题也更倾向于问 AI，一来它会给我聚合后的结果，二来也会根据上下文提供针对性的反馈。甚至可以通过自然语言描述直接帮你编码，“手动挡”变“自动挡”了。在 <a href="https://www.google.com/search?q=https://kebijuelun.github.io/vibe-coding-tutorial/vibe_coding.html">Vibe Coding</a> 时，程序员就像司机，负责提供方向性的把控，让 AI 带你到达目的地。</p><hr><p><strong>具体的使用心得</strong></p><p><strong>1. 关于编码</strong> 最直接的功能就是帮你编码。目前的 AI 表现只能说是差强人意。它能帮你快速实现效果，但它似乎没系统学过“软件工程”。</p><ul><li><p><strong>劣势区：</strong> 如果你只给它一个模糊的大概念，没有架构约束，它往往干不好，甚至会因为随意的修改破坏整体架构。</p></li><li><p><strong>优势区：</strong> 在细节上。只要给出详细的描述，AI 往往能符合你心意把代码写好。</p></li><li><p><strong>总结：</strong> 如果只给大方向，AI 可能会做过多发散修改，导致架构整体出错。</p></li></ul><p><strong>2. 关于代码阅读</strong> 这是我觉得一个很不错的优势区间。可以结合 Issue&#x2F;Bug 快速了解项目。</p><ul><li><p><strong>架构分析：</strong> AI 能帮你快速定位到相关代码块，指导你如何开始阅读，并解释代码的作用。</p></li><li><p><strong>快速上手：</strong> 不用费劲去翻找你需要哪部分代码，AI 可以帮你读出架构，助你快速上手。</p></li><li><p><strong>我的经验：</strong> 复制其他的项目到当前文件夹下，让 AI 分析代码，提取出解决思路和架构。</p></li></ul><p><strong>3. 关于重构</strong> 重构代码时 AI 表现也不错，因为重构往往是琐碎的工作，很适合交给 AI 工具来解放双手。</p><ul><li><strong>注意事项：</strong> 必须要结合<a href="https://book.douban.com/subject/30468597/">《重构》</a>的方法经验来，同时配合 Git，采用“小步快跑”的修复方式。不然 AI 意外破坏了架构可是很头痛的。</li></ul><p><strong>4. 我的工作流</strong> 如果我要实现什么，通常会先用 AI 实现一个 Demo，然后利用 AI 小步重构代码，逐步完善。</p>]]></content>
+    
+    
+    <summary type="html">我对 AI 的观点也受到了各方输入的影响，如有雷同，绝非巧合。本文有 AI 润色。</summary>
+    
+    
+    
+    
+    <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
+    
+    <category term="AI" scheme="https://cadenxc.com/tags/AI/"/>
+    
+  </entry>
   
   <entry>
     <title>求职项目展示</title>
@@ -288,9 +309,9 @@
     
     
     
-    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
-    
     <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
+    
+    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
     
   </entry>
   
@@ -430,25 +451,6 @@
     
     
     <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（3）渲染器重构</title>
-    <link href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/"/>
-    <id>https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/</id>
-    <published>2025-05-27T03:17:19.000Z</published>
-    <updated>2025-05-27T03:19:40.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="重构的理由"><a href="#重构的理由" class="headerlink" title="重构的理由"></a>重构的理由</h2><p>跟着视频写为什么需要重构呢？你只需要从视频或者代码库里把东习 <em>steal</em> 出来不就行了吗？<br>这是因为我在看他的视频的时候感觉非常熟悉，他在讲 OpenGL 的时候抽象出了一个类似的渲染器（Renderer），我想就把学习 OpenGL 写的代码哪过来不久行了吗？。确实行了，屏幕上有预期的图片绘出。但是他的设计思路是把渲染的 API 和具体的图形学 API 的实现分开，方便后续扩展API，比如Vulkan，可以让使用引擎的人不知道渲染的具体实现。<br>我的当前的代码结构没有这个抽象的 API ，直接就是 OpenGL 的具体实现，这就我直接加上的代码就不合适了。于是就开启了重构工作。</p><h2 id="开始重构"><a href="#开始重构" class="headerlink" title="开始重构"></a>开始重构</h2><p>我从 The Cherno 那里 <em>steal</em> 了抽象 API ，我要做的就是让我的现在类继承抽象的 API 。我感觉没什么困难的，可是我基本上是第一次做这种类似的工作，修改了一处就报错，代码无法运行，有一种无从下手的感觉。从 The Cherno 那里 <em>steal</em> 的抽象 API是阻挡我修改的难关，不仅成员函数的参数和数量不同，里面的数据也进行了封装，成员变量的类型和数量不同，不能直接加上继承就让代码运行。种种限制让我对着代码发愁。这很挫败，难道我应该跟着视频走，回退到没有合并代码的版本吗？有没有什么技巧可以帮我重构呢？</p><p>还真有，我想起来了这本著名的<a href="https://book.douban.com/subject/30468597/">《重构 改善既有代码的设计》</a>，之前我一直用不上就没有读，现在是时候读读这本书了。这本书给了我很大的帮助。对我来说学到的重要的思想是：小步走，让代码保持可工作状态和重构会让开发更快。这让我静下心来，不想着一步到位，而是慢慢调整代码。我一步步得重构了原本的代码，并且加深了我对这整个渲染器的设计的理解。</p><h2 id="在重构中理解设计思路"><a href="#在重构中理解设计思路" class="headerlink" title="在重构中理解设计思路"></a>在重构中理解设计思路</h2><p> 我在The Cherno 的 Layout 的布局的 API 传入的参是 自定义的枚举类型，float2 就表示两个float类型的布局，把原本的类型和个数这个参数给些在了一起，我在用这个自定义类形的参数替代原来的 float 和 unsigned int 时， 想着这里，肯定有一个把这个变量变换为原来的两个的函数，我果然看到了两个相关的函数，一个计算大小，一个返回类型。</p><p> 他的顶点数组的创建用的是Create()函数，我之前没有意思到，我重构的时候意识才到这个函数的作用是让调用渲染器时只包含抽象 API 的头文件而不用与 具体的OpenGL类的图形学 API 的实现相关。</p><p>RendererAPI，RenderCommand，Renderer类之间的关系是后者调用前者。 渲染器的 Draw 和 Clear 是一个静态函数时，不用具体实现一个Renderer类。这里整个Renderer的实现的接口都是方便引擎的使用者调用。我在这里重构了几天既让用户方便，也让开发者有一个结构更加合理的代码库，方便后续开发。</p><h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p> 这种跟上思路的感觉很棒。</p><p>这次没有学太多的新东西，基本上是 OpenGL 系列里的东西，这是的重点是重构。</p><p>我确实做的是重构，写了几天，运行的结果还是和之前一模一样。难怪书里开头问了一个问题：如何跟经理解释重构的意义。</p><p>书里说重构的最佳时机就是在添加新功能之前，这个我也认同，我就是在添加相机功能之前重构代码。</p><p>提高了我重构的意识。当代码报了一个头文件循环包含的错误时，我想这是一个坏味道，就检查了其他的代码的头文件的包含，去掉多余的。</p><p>在重构的过程中真正学到了东西，而不是从theCherno那里steal。也难怪<a href="https://www.norvig.com/21-days.html">Peter Norvig说要learning by doing</a>了。</p><p> 我看书的时候意识到theCherno的教学中的代码也是在进行重构。先在屏幕上花画出一个三角型，在不改变显示效果的情况下对代码进行修改，提高代码的可读性和可扩展性，提高代码质量。</p>]]></content>
-    
-    
-    <summary type="html">OpenGL渲染器的实现和重构</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
     
   </entry>
   
