@@ -26,15 +26,19 @@
     var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2},"disqus":{"text":"Load Disqus","order":-1}},"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="CadenXc&#39;s Blog">
-<meta property="og:url" content="https://cadenxc.com/archives/2025/11/index.html">
+  <meta property="og:type" content="article">
+<meta property="og:title" content="Vulkan Debug心得">
+<meta property="og:url" content="https://cadenxc.com/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/index.html">
 <meta property="og:site_name" content="CadenXc&#39;s Blog">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-24T12:18:21.000Z">
+<meta property="article:modified_time" content="2026-02-24T12:20:48.821Z">
 <meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="Vulkan">
+<meta property="article:tag" content="Debug">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://cadenxc.com/archives/2025/11/">
+<link rel="canonical" href="https://cadenxc.com/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/">
 
 
 <script id="page-configurations">
@@ -42,12 +46,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>归档 | CadenXc's Blog</title>
+  <title>Vulkan Debug心得 | CadenXc's Blog</title>
   
 
 
@@ -164,56 +168,117 @@
         <div class="content-wrap">
           
 
-          <div class="content archive">
+          <div class="content post posts-expand">
             
 
+    
   
   
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Vulkan Debug心得
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-02-24 20:18:21 / 修改时间：20:20:48" itemprop="dateCreated datePublished" datetime="2026-02-24T20:18:21+08:00">2026-02-24</time>
+            </span>
+
+          
   
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <span class="collection-header">嗯..! 目前共计 26 篇日志。 继续努力。</span>
-      </div>
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+            <div class="post-description">写Vulkan混合渲染器时学到的Debug技巧。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2025</span>
+        <p>最近在写毕业设计，一个Vulkan混合渲染器。Vulkan极其繁琐的API和合格的显式控制给本就困难的图形学Debug蒙上了又一道阴影。<br>下面总结了的几条我用上的技巧，有更好的方法欢迎在评论里指出，我会满怀感激得尝试。</p>
+<h3 id="验证层与结构化日志"><a href="#验证层与结构化日志" class="headerlink" title="验证层与结构化日志"></a>验证层与结构化日志</h3><p>首先是启用<a target="_blank" rel="noopener" href="https://geek-docs.com/vulkan/vulkan-tutorial/understand-validation-layers.html">Vulkan 验证层</a>。<br>同时配合使用开源日志库 <a target="_blank" rel="noopener" href="https://github.com/gabime/spdlog">spdlog</a> 实现一个自定义的日志类。<br>使用不同颜色的l日志标识。这样当前验证层出错时能一眼看出。</p>
+<h3 id="给资源起名字"><a href="#给资源起名字" class="headerlink" title="给资源起名字"></a>给资源起名字</h3><p>当验证层报错时，默认情况下它只会告诉你：“<code>VkImage 0x12ab34cd</code> 的布局不正确”。在一个拥有几十张贴图的混合管线中，这种报错无异于大海捞针。</p>
+<p>可以使用下面的函数SetDebugName() 来给资源起名。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="type">void</span> <span class="title">VulkanContext::SetDebugName</span><span class="params">(<span class="type">uint64_t</span> handle, VkObjectType type, <span class="type">const</span> <span class="type">char</span>* name)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (handle == <span class="number">0</span> || name == <span class="literal">nullptr</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">auto</span> func = (PFN_vkSetDebugUtilsObjectNameEXT)<span class="built_in">vkGetDeviceProcAddr</span>(<span class="built_in">GetDevice</span>(), <span class="string">&quot;vkSetDebugUtilsObjectNameEXT&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (func)</span><br><span class="line">        &#123;</span><br><span class="line">            VkDebugUtilsObjectNameInfoEXT nameInfo&#123; VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT &#125;;</span><br><span class="line">            nameInfo.objectType = type;</span><br><span class="line">            nameInfo.objectHandle = handle;</span><br><span class="line">            nameInfo.pObjectName = name;</span><br><span class="line">            <span class="built_in">func</span>(<span class="built_in">GetDevice</span>(), &amp;nameInfo);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>下面这个的作用？</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> VK_CHECK(result) \</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line"></span><br><span class="line">        VkResult res = (result); \</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (res != VK_SUCCESS) &#123; \</span><br><span class="line"></span><br><span class="line">            <span class="keyword">throw</span> std::<span class="built_in">runtime_error</span>(<span class="string">&quot;Vulkan error: &quot;</span> + std::<span class="built_in">to_string</span>(res)); \</span><br><span class="line"></span><br><span class="line">        &#125; \</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="可视化"><a href="#可视化" class="headerlink" title="可视化"></a>可视化</h3><p>图形编程debug重要的还是可视化。<br>使用开源库Imgui，可以很好的实现可视化Debug，可以通过 UI 面板实时切换显示 Albedo、Normal、Motion Vector 或 Depth，可以调整相机，光源位置来。</p>
+<p>因为本项目中我采用了RenderGraph管理渲染管线，所以实现了一键导出 <a target="_blank" rel="noopener" href="https://mermaid.live/">Mermaid</a> 流程图代码的功能。这样能可视化查看当前RenderGraph的拓扑逻辑。<br><a target="_blank" rel="noopener" href="https://www.zhihu.com/zvideo/1484005811182084096">这个大佬的FrameGraph可视化</a>做得很好。</p>
+<p>RenderDoc在我这次开发中没用到，不过<a target="_blank" rel="noopener" href="https://www.howtovulkan.com/#graphics-debugger">官方文档</a>有提到。</p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2025-11-29T21:43:01+08:00"
-              content="2025-11-29">
-          11-29
-        </time>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Vulkan/" rel="tag"># Vulkan</a>
+              <a href="/tags/Debug/" rel="tag"># Debug</a>
+          </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2025/11/29/%E5%9B%B0%E9%9A%BE%E9%97%AE%E9%A2%98%E4%B8%8B%E7%9A%84%E7%AE%80%E5%8D%95%E8%A7%A3%E6%B3%95/" itemprop="url">
-            <span itemprop="name">困难问题下的简单解法</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/" rel="prev" title="AI 编码的观点和经验分享">
+      <i class="fa fa-chevron-left"></i> AI 编码的观点和经验分享
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
   </article>
-
-
-    </div>
-  </div>
   
   
-  
-
   
 
 
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -260,6 +325,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AA%8C%E8%AF%81%E5%B1%82%E4%B8%8E%E7%BB%93%E6%9E%84%E5%8C%96%E6%97%A5%E5%BF%97"><span class="nav-number">1.</span> <span class="nav-text">验证层与结构化日志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%99%E8%B5%84%E6%BA%90%E8%B5%B7%E5%90%8D%E5%AD%97"><span class="nav-number">2.</span> <span class="nav-text">给资源起名字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%AF%E8%A7%86%E5%8C%96"><span class="nav-number">3.</span> <span class="nav-text">可视化</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
