@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-01-03T15:22:30.926Z</updated>
+  <updated>2026-02-28T14:33:41.169Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,117 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>从零实现 Render Graph</title>
+    <link href="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/"/>
+    <id>https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/</id>
+    <published>2026-02-28T14:32:34.000Z</published>
+    <updated>2026-02-28T14:33:41.169Z</updated>
+    
+    <content type="html"><![CDATA[<p>Render Graph，也可以叫 Frame Graph，由<a href="https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in">这个GDC演讲</a>首次提出，是一个比较现代的渲染架构。</p><p>为什么选择使用 Render Graph 呢？一开始，我只是在参考别人的开源项目时第一次接触到这个概念，简单了解它的作用后就跟着实现了。不过后来在开发测试中，我真正体会到了它的好。</p><p>如果不使用 Render Graph，是可以预见的 debug 地狱。目前我的 Pass 和 Shader 数量都分别超过了 10 个，手动配置这些依赖想想就头痛。而且现在底层实现了有向无环图（DAG），可以很方便地实现图的可视化，同时配合 ImGui 选择中间的 View 输出，能够非常快速地查看和验证渲染结果。</p><h2 id="什么是-Render-Graph"><a href="#什么是-Render-Graph" class="headerlink" title="什么是 Render Graph"></a>什么是 Render Graph</h2><p>其实已经有许多很好的材料讲过这个概念了，比如<a href="https://zhuanlan.zhihu.com/p/639001043">这篇大佬的文章</a> 。我就在这里聊聊一开始让我比较困惑的点。</p><p>如何理解 Render Graph？我们可以用现代工厂的流水线来打个简单的比方。</p><ul><li><strong>Render Graph</strong> &#x3D; 整个工厂的自动化调度系统。</li><li><strong>Pass</strong> &#x3D; 工作站 &#x2F; 派工单。它本身不干体力活，主要负责向系统声明需求（明确指出要去哪拿材料，以及最后要产出什么）。</li><li><strong>Shader</strong> &#x3D; 一线工人 &#x2F; 操作手册。它们被固定在工作站里，一旦材料到位，就负责底层的具体工作（比如像素的切割、光照的计算）。</li><li><strong>Resource</strong> &#x3D; 原材料、半成品以及最终的产品。在 Render Graph 中，它既是 Pass 提交的虚拟“提货单”（逻辑资源），也是最终分配在 GPU 上的真实物理显存。</li><li><strong>RenderPath</strong> &#x3D; 架构设计师。他决定了今天到底要造什么级别的产品（比如是走前向渲染还是复杂的混合渲染），并把需要经过的工序图纸交接给工厂。</li></ul><p>通过这种方式，原本手动管理极其痛苦的资源分配和读写依赖，就被这套“工厂系统”自动化接管了。</p><h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>本引擎的 Render Graph 实现遵循“逻辑抽象 -&gt; 自动推导 -&gt; 物理执行”的原则，核心由以下四个模块构成：</p><h3 id="1-资源的扁平化抽象与显存复用"><a href="#1-资源的扁平化抽象与显存复用" class="headerlink" title="1. 资源的扁平化抽象与显存复用"></a>1. 资源的扁平化抽象与显存复用</h3><p>本引擎采用面向数据设计（DOD）的思路来处理渲染资源，将其严格划分为逻辑与物理两层：</p><ul><li><strong>前端（逻辑句柄）：</strong> 开发者在编写 Pass 时，资源仅体现为一个轻量级的整数句柄，通过名称（如 <code>&quot;Albedo&quot;</code>）来引用，不直接操作物理显存。</li><li><strong>后端（扁平数组）：</strong> 真实的物理资源统一存放在一个连续的数组（<code>std::vector&lt;PhysicalResource&gt;</code>）中，这种紧凑的内存布局有效提高了 CPU 缓存命中率。</li><li><strong>显存复用（Memory Aliasing）：</strong> 系统在编译期执行生命周期分析，计算每个资源的创建与销毁节点。生命周期不重叠的资源会被自动分配到同一块物理显存上。这种复用机制在混合渲染等复杂管线下，为引擎节省了大量的显存空间。</li></ul><h3 id="2-基于链式调用的声明式接口"><a href="#2-基于链式调用的声明式接口" class="headerlink" title="2. 基于链式调用的声明式接口"></a>2. 基于链式调用的声明式接口</h3><p>为了提升代码的可读性，接口设计引入了 Fluent API（链式调用）模式。</p><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">data.normal = builder.<span class="built_in">Write</span>(<span class="string">&quot;Normal&quot;</span>)</span><br><span class="line">                     .<span class="built_in">Format</span>(VK_FORMAT_R16G16B16A16_SFLOAT)</span><br><span class="line">                     .<span class="built_in">SaveAsHistory</span>(<span class="string">&quot;NormalHistory&quot;</span>); <span class="comment">// 标记需要保留到下一帧</span></span><br></pre></td></tr></table></figure><p>这种设计将资源的“配置参数”与“使用意图”结合在一起，保证资源属性在声明时即被明确定义，避免了“先使用后初始化”等潜在错误。</p><h3 id="3-自动化的拓扑排序与同步"><a href="#3-自动化的拓扑排序与同步" class="headerlink" title="3. 自动化的拓扑排序与同步"></a>3. 自动化的拓扑排序与同步</h3><p>在所有 Pass 声明完毕后，系统会自动分析它们之间的读写依赖，完成两项核心工作：</p><ul><li><strong>拓扑排序：</strong> 根据资源的输入输出关系，自动对打乱的 Pass 进行重排，推导出正确的执行顺序。</li><li><strong>屏障推导：</strong> 对比资源在前后 Pass 中的状态变化。如果一个资源从“写入”状态流向“读取”状态，系统会自动在 GPU 指令流中插入对应的<strong>内存屏障（Memory Barrier）</strong> 和布局转换（Layout Transition）。这直接避免了手动管理 Vulkan 同步状态带来的 Debug 难题。</li></ul><h3 id="4-结合-Vulkan-动态渲染"><a href="#4-结合-Vulkan-动态渲染" class="headerlink" title="4. 结合 Vulkan 动态渲染"></a>4. 结合 Vulkan 动态渲染</h3><p>引擎底层接入了 <strong>Vulkan 1.3 的动态渲染（Dynamic Rendering）</strong> 特性。</p><p>传统的 Vulkan 渲染需要预先创建 <code>VkRenderPass</code> 和 <code>VkFramebuffer</code> 对象。而在本系统中，Render Graph 搭配动态渲染实现了“即用即建”：在执行阶段，直接根据当前的资源绑定关系实时组装渲染指令。这种模式大幅精简了底层的样板代码，也让引擎在处理窗口尺寸变化或管线切换时更加简单直接。</p><hr><p>这篇文章主要是博主用来记录学习过程的，欢迎大佬来指正交流。</p>]]></content>
+    
+    
+    <summary type="html">介绍Render Graph 的学习实现心得。</summary>
+    
+    
+    
+    
+    <category term="Vulkan" scheme="https://cadenxc.com/tags/Vulkan/"/>
+    
+    <category term="Render Graph" scheme="https://cadenxc.com/tags/Render-Graph/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Vulkan Debug心得</title>
+    <link href="https://cadenxc.com/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/"/>
+    <id>https://cadenxc.com/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/</id>
+    <published>2026-02-24T12:18:21.000Z</published>
+    <updated>2026-02-24T12:20:48.821Z</updated>
+    
+    <content type="html"><![CDATA[<p>最近在写毕业设计，一个Vulkan混合渲染器。Vulkan极其繁琐的API和合格的显式控制给本就困难的图形学Debug蒙上了又一道阴影。<br>下面总结了的几条我用上的技巧，有更好的方法欢迎在评论里指出，我会满怀感激得尝试。</p><h3 id="验证层与结构化日志"><a href="#验证层与结构化日志" class="headerlink" title="验证层与结构化日志"></a>验证层与结构化日志</h3><p>首先是启用<a href="https://geek-docs.com/vulkan/vulkan-tutorial/understand-validation-layers.html">Vulkan 验证层</a>。<br>同时配合使用开源日志库 <a href="https://github.com/gabime/spdlog">spdlog</a> 实现一个自定义的日志类。<br>使用不同颜色的l日志标识。这样当前验证层出错时能一眼看出。</p><h3 id="给资源起名字"><a href="#给资源起名字" class="headerlink" title="给资源起名字"></a>给资源起名字</h3><p>当验证层报错时，默认情况下它只会告诉你：“<code>VkImage 0x12ab34cd</code> 的布局不正确”。在一个拥有几十张贴图的混合管线中，这种报错无异于大海捞针。</p><p>可以使用下面的函数SetDebugName() 来给资源起名。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="type">void</span> <span class="title">VulkanContext::SetDebugName</span><span class="params">(<span class="type">uint64_t</span> handle, VkObjectType type, <span class="type">const</span> <span class="type">char</span>* name)</span></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (handle == <span class="number">0</span> || name == <span class="literal">nullptr</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">auto</span> func = (PFN_vkSetDebugUtilsObjectNameEXT)<span class="built_in">vkGetDeviceProcAddr</span>(<span class="built_in">GetDevice</span>(), <span class="string">&quot;vkSetDebugUtilsObjectNameEXT&quot;</span>);</span><br><span class="line">        <span class="keyword">if</span> (func)</span><br><span class="line">        &#123;</span><br><span class="line">            VkDebugUtilsObjectNameInfoEXT nameInfo&#123; VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT &#125;;</span><br><span class="line">            nameInfo.objectType = type;</span><br><span class="line">            nameInfo.objectHandle = handle;</span><br><span class="line">            nameInfo.pObjectName = name;</span><br><span class="line">            <span class="built_in">func</span>(<span class="built_in">GetDevice</span>(), &amp;nameInfo);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure><p>下面这个的作用？</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> VK_CHECK(result) \</span></span><br><span class="line"><span class="meta"></span></span><br><span class="line">    <span class="keyword">do</span> &#123; \</span><br><span class="line"></span><br><span class="line">        VkResult res = (result); \</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (res != VK_SUCCESS) &#123; \</span><br><span class="line"></span><br><span class="line">            <span class="keyword">throw</span> std::<span class="built_in">runtime_error</span>(<span class="string">&quot;Vulkan error: &quot;</span> + std::<span class="built_in">to_string</span>(res)); \</span><br><span class="line"></span><br><span class="line">        &#125; \</span><br><span class="line"></span><br><span class="line">    &#125; <span class="keyword">while</span>(<span class="number">0</span>)</span><br></pre></td></tr></table></figure><h3 id="可视化"><a href="#可视化" class="headerlink" title="可视化"></a>可视化</h3><p>图形编程debug重要的还是可视化。<br>使用开源库Imgui，可以很好的实现可视化Debug，可以通过 UI 面板实时切换显示 Albedo、Normal、Motion Vector 或 Depth，可以调整相机，光源位置来。</p><p>因为本项目中我采用了RenderGraph管理渲染管线，所以实现了一键导出 <a href="https://mermaid.live/">Mermaid</a> 流程图代码的功能。这样能可视化查看当前RenderGraph的拓扑逻辑。<br><a href="https://www.zhihu.com/zvideo/1484005811182084096">这个大佬的FrameGraph可视化</a>做得很好。</p><p>RenderDoc在我这次开发中没用到，不过<a href="https://www.howtovulkan.com/#graphics-debugger">官方文档</a>有提到。</p>]]></content>
+    
+    
+    <summary type="html">写Vulkan混合渲染器时学到的Debug技巧。</summary>
+    
+    
+    
+    
+    <category term="Vulkan" scheme="https://cadenxc.com/tags/Vulkan/"/>
+    
+    <category term="Debug" scheme="https://cadenxc.com/tags/Debug/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>AI 编码的观点和经验分享</title>
+    <link href="https://cadenxc.com/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/"/>
+    <id>https://cadenxc.com/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/</id>
+    <published>2026-02-12T05:00:47.000Z</published>
+    <updated>2026-02-12T09:45:18.159Z</updated>
+    
+    <content type="html"><![CDATA[<p>这里提到的“AI”，涵盖了我用过的通用大模型（如 GPT, Gemini），以及集成在编辑器中的编程 AI（如 Cursor, Gemini Code Assist 等）。<br><strong>观念：工具的进化</strong></p><p>AI 相当于一个新的工具，我觉得应该尽快学会使用它。我看过一个非常贴切的比喻：在没有 AI 之前，程序员编程好比马车夫驾驶马车；而 AI 的出现，相当于把马车升级为了汽车。</p><p>AI 虽然比马车更加强大，但说到底还是一个工具。我们要做就是尽快学习使用它，完成从“赶马车”到“开汽车”的升级。即使工具升级了，有些东西是不变的——比如“拉客经验”，这就相当于程序员的内功心法：<strong>数据结构与算法</strong>。所以不用担心是否被替代了，这也符合我们斯多葛主义者的精神。</p><p><strong>趋势：从搜索到生成</strong></p><p>传统的浏览器搜索和 <a href="https://stackoverflow.com/questions">Stack Overflow</a> 就像是那辆略显落后的马车。<a href="https://baike.baidu.com/item/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E4%BC%98%E5%8C%96/3132">SEO</a> (搜索引擎优化) 已显颓势，而 <a href="https://baike.baidu.com/item/%E6%90%9C%E7%B4%A2%E5%BC%95%E6%93%8E%E4%BC%98%E5%8C%96/3132">GEO</a> (生成式引擎优化) 则日益火爆。</p><p>我平时有什么问题也更倾向于问 AI，一来它会给我聚合后的结果，二来也会根据上下文提供针对性的反馈。甚至可以通过自然语言描述直接帮你编码，“手动挡”变“自动挡”了。在 <a href="https://kebijuelun.github.io/vibe-coding-tutorial/vibe_coding.html">Vibe Coding</a> 时，程序员就像司机，负责提供方向性的把控，让 AI 带你到达目的地。</p><hr><p><strong>具体的使用心得</strong></p><p><strong>1. 关于编码</strong> 最直接的功能就是帮你编码。目前的 AI 表现只能说是差强人意。它能帮你快速实现效果，但它似乎没系统学过“软件工程”。</p><ul><li><p><strong>劣势区：</strong> 如果你只给它一个模糊的大概念，没有架构约束，它往往干不好，甚至会因为随意的修改破坏整体架构。</p></li><li><p><strong>优势区：</strong> 在细节上。只要给出详细的描述，AI 往往能符合你心意把代码写好。</p></li><li><p><strong>总结：</strong> 如果只给大方向，AI 可能会做过多发散修改，导致架构整体出错。</p></li></ul><p><strong>2. 关于代码阅读</strong> 这是我觉得一个很不错的优势区间。可以结合 Issue&#x2F;Bug 快速了解项目。</p><ul><li><p><strong>架构分析：</strong> AI 能帮你快速定位到相关代码块，指导你如何开始阅读，并解释代码的作用。</p></li><li><p><strong>快速上手：</strong> 不用费劲去翻找你需要哪部分代码，AI 可以帮你读出架构，助你快速上手。</p></li><li><p><strong>我的经验：</strong> 复制其他的项目到当前文件夹下，让 AI 分析代码，提取出解决思路和架构。</p></li></ul><p><strong>3. 关于重构</strong> 重构代码时 AI 表现也不错，因为重构往往是琐碎的工作，很适合交给 AI 工具来解放双手。</p><ul><li><strong>注意事项：</strong> 必须要结合<a href="https://book.douban.com/subject/30468597/">《重构》</a>的方法经验来，同时配合 Git，采用“小步快跑”的修复方式。不然 AI 意外破坏了架构可是很头痛的。</li></ul><p><strong>4. 我的工作流</strong> 如果我要实现什么，通常会先用 AI 实现一个 Demo，然后利用 AI 小步重构代码，逐步完善。</p>]]></content>
+    
+    
+    <summary type="html">我对 AI 的观点也受到了各方输入的影响，如有雷同，绝非巧合。本文有 AI 润色。</summary>
+    
+    
+    
+    
+    <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
+    
+    <category term="AI" scheme="https://cadenxc.com/tags/AI/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>求职项目展示</title>
+    <link href="https://cadenxc.com/2026/02/02/job-demo-showcase/"/>
+    <id>https://cadenxc.com/2026/02/02/job-demo-showcase/</id>
+    <published>2026-02-02T02:00:00.000Z</published>
+    <updated>2026-02-02T08:43:38.662Z</updated>
+    
+    <content type="html"><![CDATA[<p>视频如果加载有些慢可能是因为博客挂在github上，可以想办法加速下。</p><h3 id="SDL2-2D-平台跳跃游戏"><a href="#SDL2-2D-平台跳跃游戏" class="headerlink" title="SDL2 2D 平台跳跃游戏"></a>SDL2 2D 平台跳跃游戏</h3><p>基于 SDL2 开发的 2D 游戏，C++实现物理，相机，图片等引擎功能模块，有限状态机切换界面。</p><video width="100%" controls>  <source src="/videoes/getto.mp4" type="video/mp4">  您的浏览器不支持播放该视频。</video><p><a href="https://gitee.com/satoshi657/getto">项目源码</a></p><hr><h3 id="UE-程序化生成几何体"><a href="#UE-程序化生成几何体" class="headerlink" title="UE 程序化生成几何体"></a>UE 程序化生成几何体</h3><p>程序化生成几何体的Ue Demo。</p><video width="100%" controls>  <source src="/videoes/modelgen.mp4" type="video/mp4">  您的浏览器不支持播放该视频。</video><p><a href="https://gitee.com/satoshi657/moden-gen">项目源码</a></p>]]></content>
+    
+    
+    <summary type="html">SDL2 2D 游戏与 UE 程序化生成几何体演示。</summary>
+    
+    
+    
+    
+    <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
+    
+    <category term="UE4" scheme="https://cadenxc.com/tags/UE4/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>可编辑曲面性能优化</title>
+    <link href="https://cadenxc.com/2026/01/16/%E5%8F%AF%E7%BC%96%E8%BE%91%E6%9B%B2%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    <id>https://cadenxc.com/2026/01/16/%E5%8F%AF%E7%BC%96%E8%BE%91%E6%9B%B2%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</id>
+    <published>2026-01-16T13:20:22.000Z</published>
+    <updated>2026-01-16T13:21:04.426Z</updated>
+    
+    <content type="html"><![CDATA[<p>之前的可编辑模型(如正方体，圆台）不涉及复杂的性能瓶颈，但是可编辑曲面不同。它的本质是沿着样条线（Spline）动态生成的拓扑结构，其顶点数量没有硬性上限，而是与<strong>路径长度</strong>、<strong>采样精度</strong>以及<strong>断面复杂度</strong>呈线性甚至几何级数增长。</p><h1 id="优化策略"><a href="#优化策略" class="headerlink" title="优化策略"></a>优化策略</h1><h2 id="埋点分析与耗时监控"><a href="#埋点分析与耗时监控" class="headerlink" title="埋点分析与耗时监控"></a>埋点分析与耗时监控</h2><p>“没有测量就没有优化。” 在盲目优化之前，必须知道瓶颈在哪。实现一个自定义的计时器类（Scoped Timer），在几何生成、碰撞构建等关键函数的入口进行埋点。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">FScopedTimer</span></span><br><span class="line">&#123;</span><br><span class="line">    FString FunctionName;</span><br><span class="line">    <span class="type">double</span> StartTime;</span><br><span class="line"></span><br><span class="line">    <span class="type">static</span> int32 Depth;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">FScopedTimer</span>(FString InName)</span><br><span class="line">        : <span class="built_in">FunctionName</span>(InName)</span><br><span class="line">    &#123;</span><br><span class="line">        StartTime = FPlatformTime::<span class="built_in">Seconds</span>();</span><br><span class="line">        Depth++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ~<span class="built_in">FScopedTimer</span>()</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="type">double</span> EndTime = FPlatformTime::<span class="built_in">Seconds</span>();</span><br><span class="line">        <span class="type">float</span> DurationMs = (<span class="type">float</span>)((EndTime - StartTime) * <span class="number">1000.0</span>);</span><br><span class="line"></span><br><span class="line">        FString Indent = <span class="built_in">TEXT</span>(<span class="string">&quot;&quot;</span>);</span><br><span class="line">        <span class="keyword">for</span> (int32 i = <span class="number">1</span>; i &lt; Depth; ++i)</span><br><span class="line">        &#123;</span><br><span class="line">            Indent += <span class="built_in">TEXT</span>(<span class="string">&quot;  |  &quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        FString LogLine = FString::<span class="built_in">Printf</span>(<span class="built_in">TEXT</span>(<span class="string">&quot;[%s] %s%s: %.4f ms\n&quot;</span>),</span><br><span class="line">            *FDateTime::<span class="built_in">Now</span>().<span class="built_in">ToString</span>(<span class="built_in">TEXT</span>(<span class="string">&quot;%H:%M:%S.%s&quot;</span>)),</span><br><span class="line">            *Indent,</span><br><span class="line">            *FunctionName,</span><br><span class="line">            DurationMs);</span><br><span class="line"></span><br><span class="line">        FString FilePath = FPaths::<span class="built_in">ProjectSavedDir</span>() / <span class="built_in">TEXT</span>(<span class="string">&quot;Profiling/SurfaceGenPerf.txt&quot;</span>);</span><br><span class="line">        FFileHelper::<span class="built_in">SaveStringToFile</span>(LogLine, *FilePath, FFileHelper::EEncodingOptions::AutoDetect, &amp;IFileManager::<span class="built_in">Get</span>(), FILEWRITE_Append);</span><br><span class="line"></span><br><span class="line">        Depth--;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">int32 FScopedTimer::Depth = <span class="number">0</span>;</span><br></pre></td></tr></table></figure><h2 id="内存管理：缓存复用与预分配"><a href="#内存管理：缓存复用与预分配" class="headerlink" title="内存管理：缓存复用与预分配"></a>内存管理：缓存复用与预分配</h2><p>C++ 中频繁的内存分配是非常昂贵的</p><ul><li><strong>成员变量缓存：</strong> 将 <code>LeftRailRaw</code>, <code>CachedRawPoints</code> 等高频使用的数组提升为类的成员变量。每次生成时，调用 <code>Reset()</code> 而不是 <code>Empty()</code>。<code>Reset()</code> 会清空数据但保留 <code>Capacity</code>（容量），从而避免了底层的内存释放与重新分配。</li><li><strong>预分配 ：</strong> 在填充数据前，通过 <code>CalculateVertexCountEstimate()</code> 估算大概的顶点数，并调用 <code>MeshData.Reserve()</code>。这避免了 <code>TArray</code> 在 <code>Add</code> 过程中因为扩容而发生的多次数据搬迁。</li></ul><h2 id="智能减面：基于角度的自适应采样"><a href="#智能减面：基于角度的自适应采样" class="headerlink" title="智能减面：基于角度的自适应采样"></a>智能减面：基于角度的自适应采样</h2><p>并非所有的路段都需要同等密度的顶点采样。直线段仅需首尾两点确定，而弯道才需要高密度逼近。</p><ul><li><strong>原理：</strong> 计算相邻线段方向向量的点积：<br>$$\vec{v_1} \cdot \vec{v_2} &#x3D; \cos(\theta)$$<br>如果点积接近 1（例如 <code>&gt; 0.9998</code>），说明线段几乎共线，中间的顶点是冗余的，可以剔除。</li><li><strong>效果：</strong> 在不损失视觉质量的前提下，大幅减少了生成的三角形数量，进而减轻了 GPU 的光栅化压力。</li></ul><h2 id="算法优化：空间哈希加速去环检测"><a href="#算法优化：空间哈希加速去环检测" class="headerlink" title="算法优化：空间哈希加速去环检测"></a>算法优化：空间哈希加速去环检测</h2><p>当曲面发生自我交叉（打结）时，我们需要检测并剔除这些几何体。朴素的去环检测需要 $O(N^2)$ 的暴力比对，顶点过多容易卡死线程。</p><ul><li><p><strong>解决方案：</strong> 引入<strong>空间哈希 (Spatial Hashing)</strong>。</p></li><li><p><strong>实现：</strong> 我们将 3D 空间<strong>投影到 2D 网格</strong>，通过简单的位运算和大质数散射 <code>((X * 73856093) ^ (Y * 19349663)) &amp; (HashSize - 1)</code> 将顶点映射到哈希桶中。之后会执行精确的 <strong>3D 欧氏距离检测</strong>。只要高度（Z轴）差距足够大，即便 2D 投影重叠，也绝不会被错误剔除。</p></li><li><p><strong>提升：</strong> 查询复杂度降至接近 $O(1)$，实现实时拖拽去环。</p></li></ul>]]></content>
+    
+    
+    <summary type="html">性能优化。</summary>
+    
+    
+    
+    
+    <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
+    
+    <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
+    
+    <category term="COW" scheme="https://cadenxc.com/tags/COW/"/>
+    
+  </entry>
   
   <entry>
     <title>可编辑模型实现写时复制</title>
@@ -31,9 +142,9 @@
     
     
     
-    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
-    
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
     
@@ -119,9 +230,9 @@
     
     
     
-    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
-    
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="序列化" scheme="https://cadenxc.com/tags/%E5%BA%8F%E5%88%97%E5%8C%96/"/>
     
@@ -165,9 +276,9 @@
     
     
     
-    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
-    
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
     
@@ -190,9 +301,9 @@
     
     
     
-    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
-    
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
     
@@ -215,9 +326,9 @@
     
     
     
-    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
-    
     <category term="C++" scheme="https://cadenxc.com/tags/C/"/>
+    
+    <category term="UE" scheme="https://cadenxc.com/tags/UE/"/>
     
     <category term="程序化网格体" scheme="https://cadenxc.com/tags/%E7%A8%8B%E5%BA%8F%E5%8C%96%E7%BD%91%E6%A0%BC%E4%BD%93/"/>
     
@@ -240,9 +351,9 @@
     
     
     
-    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
-    
     <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
+    
+    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
     
   </entry>
   
@@ -339,101 +450,6 @@
     
     
     <summary type="html">视频看到了第66节了。</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>代码之外的推荐</title>
-    <link href="https://cadenxc.com/2025/06/02/%E4%BB%A3%E7%A0%81%E4%B9%8B%E5%A4%96%E7%9A%84%E6%8E%A8%E8%8D%90/"/>
-    <id>https://cadenxc.com/2025/06/02/%E4%BB%A3%E7%A0%81%E4%B9%8B%E5%A4%96%E7%9A%84%E6%8E%A8%E8%8D%90/</id>
-    <published>2025-06-02T11:59:47.000Z</published>
-    <updated>2025-11-23T02:09:31.718Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="浏览器插件"><a href="#浏览器插件" class="headerlink" title="浏览器插件"></a>浏览器插件</h2><ul><li><a href="https://microsoftedge.microsoft.com/addons/detail/onetab/hoimpamkkoehapgenciaoajfkfkpgfop">OneTab</a>：压缩页面，减少内存占用，方便搜集临时的不想收藏的页面，配合浏览器的分组功能效果更佳；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/%E6%B2%99%E6%8B%89%E6%9F%A5%E8%AF%8D%E8%81%9A%E5%90%88%E8%AF%8D%E5%85%B8%E5%88%92%E8%AF%8D%E7%BF%BB%E8%AF%91/idghocbbahafpfhjnfhpbfbmpegphmmp?hl=zh-CN">沙拉查词</a>：聚合词典划词翻译；</li><li><a href="https://github.com/iorate/ublacklist">uBlacklist</a>：屏蔽网站用，清理 [内容农场]；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/get-rss-feed-url/pgbelohmepchkohpdldadopkblkgbjom">Get RSS Feed URL</a>：获取当前网页的RSS订阅；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/%E5%BE%AE%E4%BF%A1%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0%E5%8A%A9%E6%89%8B/iblnlnnpkbhnempmcbioeholmemingmo">微信读书笔记助手</a>：复制网页版微信读书画线评论；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/immersive-translate-tra/amkbmndfnliijdhojkpoglbnaaahippg">Immersive Translate</a>：内嵌式网页翻译；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/marinara-pomodoro%C2%AE-assis/ncpfbgmhdpgbgmdmkfcddiemjhebegin">Marinara: Pomodoro® Assistant</a>：一个番茄工作法的番茄钟；</li><li><a href="https://microsoftedge.microsoft.com/addons/detail/global-speed-%E8%A7%86%E9%A2%91%E9%80%9F%E5%BA%A6%E6%8E%A7%E5%88%B6/mjhlabbcmjflkpjknnicihkfnmbdfced?hl=zh-CN">Global Speed: 视频速度控制 - Microsoft Edge Addons</a>：视频速度控制。</li></ul><h2 id="Windows工具"><a href="#Windows工具" class="headerlink" title="Windows工具"></a>Windows工具</h2><ul><li><a href="https://www.sumatrapdfreader.org/free-pdf-reader">Sumatra PDF</a>：功能强大的电子书阅读器，可以打开多种电子书格式；</li><li><a href="https://rime.im/">小狼毫输入法</a>：好用的输入法软件；</li><li><a href="https://keepass.info/download.html">KeePass</a>：密码管理工具；</li><li><a href="https://geekuninstaller.com/">Geek</a>：知名卸载工具；</li><li><a href="https://www.cnblogs.com/hui-tong/p/18085042">Qbittorrent</a>：磁力下载软件，配合资源下载网址<a href="https://piratebayproxy.net/zh/">海盗湾</a>使用；</li><li><a href="https://sourceforge.net/projects/spacesniffer/">SpaceSniffer</a>：磁盘空间分析软件；</li><li><a href="https://github.com/easymodo/qimgv">qimgv</a>：图片浏览器：觉得Windows自带的图片显示不好用，可以试试这个；</li><li><a href="https://pixpin.cn/">PixPin</a>：截图贴图工具；</li><li><a href="https://apps.microsoft.com/detail/xp8bsbgqw2dks0?hl=zh-cn&gl=cn">PotPlayer</a>：可能是最好用的视频播放器；</li><li><a href="https://github.com/Wox-launcher/Wox">Wox</a>：调用了<a href="https://www.voidtools.com/zh-cn/">Everything</a>的软件快速启动器；</li><li><a href="https://obsidian.md/">Obsidian</a>：markdown笔记软件我选的这个，免费，双链笔记功能强大，推荐配合<a href="https://notes.oldwinter.top/%E5%B8%B8%E9%9D%92%E7%AC%94%E8%AE%B0">常青笔记</a>，<a href="https://forum-zh.obsidian.md/t/topic/134">下载插件</a>能让软件更好用；</li><li><a href="https://steampp.net/">Watt Toolkit</a>：加速器，连接 Github 和 Steam；</li><li><a href="https://mfiles.maokebing.com/">爱传送</a>：手机和电脑跨平台传送文件；</li><li><a href="https://zh-cn.libreoffice.org/">LibreOffice</a>：Wps和Micro Office的开源平替；</li><li><a href="https://www.gimp.org/">GIMP</a>：Adobe Photoshop 的开源平替；</li><li><a href="https://uuyc.163.com/">网易UU远程</a>：远程控制电脑；</li><li><a href="https://obsproject.com/?ref=openalternative.co">OBS</a>：开源视频录制软件；</li><li><a href="https://git-fork.com/">Fork</a>：Git 图形界面工具；</li><li><a href="https://cubox.pro/">Cubox</a>：跨平台浏览器页面管理；</li><li><a href="https://sourceforge.net/projects/fluent-reader.mirror/">Fluent Reader</a>：rss阅读器；</li><li><a href="https://twinkletray.com/">Twinkle Tray</a>：一个软件控制多个屏幕亮度；</li><li><a href="https://justgetflux.com/">f.lux</a>: 护眼工具；</li><li><a href="https://www.7zip.com/cn/">7Zip</a>：开源压缩软件。</li></ul><h2 id="安卓App"><a href="#安卓App" class="headerlink" title="安卓App"></a>安卓App</h2><p>在应用商店、github或者浏览器上能找到：</p><ul><li><a href="https://github.com/foobnix/LibreraReader">Librera</a>：阅读软件，可以打开Txt，PDF，Mobi等各种格式的文件；</li><li><a href="https://weread.qq.com/">微信读书</a>：电子书书城，阅读购买电子书；</li><li><a href="https://flomoapp.com/">flomo</a>：有浏览器页面，互传文字挺方便。</li><li><a href="https://habitica.com/">Habitica</a>：游戏化任务管理。</li><li>小宇宙：听播客；</li><li>ZArchiver&#x2F;MT Manager：手机文件管理，压缩包解压；</li></ul><h2 id="推荐学习的技能"><a href="#推荐学习的技能" class="headerlink" title="推荐学习的技能"></a>推荐学习的技能</h2><ul><li><a href="https://api.ihint.me/shuang/">双拼练习</a>：一种打字拼音输入法，有多种映射方式，选一种即可；</li><li><a href="https://markdown.com.cn/intro.html#markdown-%E6%98%AF%E4%BB%80%E4%B9%88">Markdown</a>：轻量级的标记语言，方便排版，写笔记，博客文章用；</li><li><a href="https://www.overleaf.com/learn">Latex</a>：一种编程语言，方便排版，写论文用。</li></ul>]]></content>
-    
-    
-    <summary type="html">推荐一些非技术相关的浏览器插件/软件/技能。</summary>
-    
-    
-    
-    
-    <category term="分享" scheme="https://cadenxc.com/tags/%E5%88%86%E4%BA%AB/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>《重构 改善既有代码的设计》简评</title>
-    <link href="https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/"/>
-    <id>https://cadenxc.com/2025/05/29/%E3%80%8A%E9%87%8D%E6%9E%84%20%E6%94%B9%E5%96%84%E6%97%A2%E6%9C%89%E4%BB%A3%E7%A0%81%E7%9A%84%E8%AE%BE%E8%AE%A1%E3%80%8B%E7%AE%80%E8%AF%84/</id>
-    <published>2025-05-29T12:43:21.000Z</published>
-    <updated>2025-05-29T12:47:54.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>读<a href="https://book.douban.com/subject/30468596/">本书</a>的缘由看这里：<a href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/">游戏引擎学习之旅（2）渲染器重构</a>。</p><p>我读完了感觉不错。和<a href="https://book.douban.com/subject/4199740/">《代码整洁之道》</a>一样，我现在还是一个新人，还没有没有遇到什么真实的复杂情况，有些需要重构的坏味道没有遇到，我就是凭我自己的感觉。</p><p>个人来说，他的前几章讲的思想原则就值得去看。</p><ul><li>重构的最佳时机是加入新功能之前；</li><li>重构要小步走；</li><li>何时不该重构；</li><li>重构会让开发更快。</li></ul><p>书的后面就是在讲重构的方法了，提供了一堆术语，方便和别人交流。这些反而就不是很重要了，需要的时候查表就行了。书在最后还贴心得给了一个坏味道与重构手法速查表。</p><p>确实是实用的书，当成词典就行了。</p>]]></content>
-    
-    
-    <summary type="html">是一本久负盛名的书，经常会出现在推荐书单的书。</summary>
-    
-    
-    
-    
-    <category term="书籍" scheme="https://cadenxc.com/tags/%E4%B9%A6%E7%B1%8D/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（3）渲染器重构</title>
-    <link href="https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/"/>
-    <id>https://cadenxc.com/2025/05/27/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%883%EF%BC%89%E6%B8%B2%E6%9F%93%E5%99%A8%E9%87%8D%E6%9E%84/</id>
-    <published>2025-05-27T03:17:19.000Z</published>
-    <updated>2025-05-27T03:19:40.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="重构的理由"><a href="#重构的理由" class="headerlink" title="重构的理由"></a>重构的理由</h2><p>跟着视频写为什么需要重构呢？你只需要从视频或者代码库里把东习 <em>steal</em> 出来不就行了吗？<br>这是因为我在看他的视频的时候感觉非常熟悉，他在讲 OpenGL 的时候抽象出了一个类似的渲染器（Renderer），我想就把学习 OpenGL 写的代码哪过来不久行了吗？。确实行了，屏幕上有预期的图片绘出。但是他的设计思路是把渲染的 API 和具体的图形学 API 的实现分开，方便后续扩展API，比如Vulkan，可以让使用引擎的人不知道渲染的具体实现。<br>我的当前的代码结构没有这个抽象的 API ，直接就是 OpenGL 的具体实现，这就我直接加上的代码就不合适了。于是就开启了重构工作。</p><h2 id="开始重构"><a href="#开始重构" class="headerlink" title="开始重构"></a>开始重构</h2><p>我从 The Cherno 那里 <em>steal</em> 了抽象 API ，我要做的就是让我的现在类继承抽象的 API 。我感觉没什么困难的，可是我基本上是第一次做这种类似的工作，修改了一处就报错，代码无法运行，有一种无从下手的感觉。从 The Cherno 那里 <em>steal</em> 的抽象 API是阻挡我修改的难关，不仅成员函数的参数和数量不同，里面的数据也进行了封装，成员变量的类型和数量不同，不能直接加上继承就让代码运行。种种限制让我对着代码发愁。这很挫败，难道我应该跟着视频走，回退到没有合并代码的版本吗？有没有什么技巧可以帮我重构呢？</p><p>还真有，我想起来了这本著名的<a href="https://book.douban.com/subject/30468597/">《重构 改善既有代码的设计》</a>，之前我一直用不上就没有读，现在是时候读读这本书了。这本书给了我很大的帮助。对我来说学到的重要的思想是：小步走，让代码保持可工作状态和重构会让开发更快。这让我静下心来，不想着一步到位，而是慢慢调整代码。我一步步得重构了原本的代码，并且加深了我对这整个渲染器的设计的理解。</p><h2 id="在重构中理解设计思路"><a href="#在重构中理解设计思路" class="headerlink" title="在重构中理解设计思路"></a>在重构中理解设计思路</h2><p> 我在The Cherno 的 Layout 的布局的 API 传入的参是 自定义的枚举类型，float2 就表示两个float类型的布局，把原本的类型和个数这个参数给些在了一起，我在用这个自定义类形的参数替代原来的 float 和 unsigned int 时， 想着这里，肯定有一个把这个变量变换为原来的两个的函数，我果然看到了两个相关的函数，一个计算大小，一个返回类型。</p><p> 他的顶点数组的创建用的是Create()函数，我之前没有意思到，我重构的时候意识才到这个函数的作用是让调用渲染器时只包含抽象 API 的头文件而不用与 具体的OpenGL类的图形学 API 的实现相关。</p><p>RendererAPI，RenderCommand，Renderer类之间的关系是后者调用前者。 渲染器的 Draw 和 Clear 是一个静态函数时，不用具体实现一个Renderer类。这里整个Renderer的实现的接口都是方便引擎的使用者调用。我在这里重构了几天既让用户方便，也让开发者有一个结构更加合理的代码库，方便后续开发。</p><h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p> 这种跟上思路的感觉很棒。</p><p>这次没有学太多的新东西，基本上是 OpenGL 系列里的东西，这是的重点是重构。</p><p>我确实做的是重构，写了几天，运行的结果还是和之前一模一样。难怪书里开头问了一个问题：如何跟经理解释重构的意义。</p><p>书里说重构的最佳时机就是在添加新功能之前，这个我也认同，我就是在添加相机功能之前重构代码。</p><p>提高了我重构的意识。当代码报了一个头文件循环包含的错误时，我想这是一个坏味道，就检查了其他的代码的头文件的包含，去掉多余的。</p><p>在重构的过程中真正学到了东西，而不是从theCherno那里steal。也难怪<a href="https://www.norvig.com/21-days.html">Peter Norvig说要learning by doing</a>了。</p><p> 我看书的时候意识到theCherno的教学中的代码也是在进行重构。先在屏幕上花画出一个三角型，在不改变显示效果的情况下对代码进行修改，提高代码的可读性和可扩展性，提高代码质量。</p>]]></content>
-    
-    
-    <summary type="html">OpenGL渲染器的实现和重构</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（2）事件系统</title>
-    <link href="https://cadenxc.com/2025/05/20/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%882%EF%BC%89%E4%BA%8B%E4%BB%B6%E7%B3%BB%E7%BB%9F/"/>
-    <id>https://cadenxc.com/2025/05/20/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%882%EF%BC%89%E4%BA%8B%E4%BB%B6%E7%B3%BB%E7%BB%9F/</id>
-    <published>2025-05-20T06:38:50.000Z</published>
-    <updated>2025-05-20T06:59:50.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>视频学到了<a href="https://www.bilibili.com/video/BV1mw41187Ac?spm_id_from=333.788.videopod.episodes&vd_source=c7d1bbd34d9982d8b421763e8204f67d&p=22">S022</a>，分析一下Hazel的事件系统是如何实现的。</p><span id="more"></span><p>先看看Application类里如何处理jj下面这里的 变量层栈的for循环里，if(e.Handled)为true，就退出不处理了</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Application::OnEvent</span><span class="params">(Event&amp; e)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="built_in">HZ_PROFILE_FUNCTION</span>();</span><br><span class="line"></span><br><span class="line"><span class="function">EventDispatcher <span class="title">dispatcher</span><span class="params">(e)</span></span>;</span><br><span class="line">dispatcher.<span class="built_in">Dispatch</span>&lt;WindowCloseEvent&gt;(<span class="built_in">HZ_BIND_EVENT_FN</span>(Application::OnWindowClose));</span><br><span class="line">dispatcher.<span class="built_in">Dispatch</span>&lt;WindowResizeEvent&gt;(<span class="built_in">HZ_BIND_EVENT_FN</span>(Application::OnWindowResize));</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">auto</span> it = m_LayerStack.<span class="built_in">rbegin</span>(); it != m_LayerStack.<span class="built_in">rend</span>(); ++it)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">if</span> (e.Handled) </span><br><span class="line"><span class="keyword">break</span>;</span><br><span class="line">(*it)-&gt;<span class="built_in">OnEvent</span>(e);</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure><p>这里显示用了一个dispatcher来处理窗口关闭和窗口重定义大小，这里的写法是判断事件类型是否符合传入的Callback处理函数，如果匹配了，就设置Handled为true（看下面的OnWindowClose返回的true，这样异或为true）。看下面的循环，Handled为true会直接退出。</p><figure class="highlight c++"><figcaption><span>dispatch</span></figcaption><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// F will be deduced by the compiler</span></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T, <span class="keyword">typename</span> F&gt;</span></span><br><span class="line"><span class="function"><span class="type">bool</span> <span class="title">Dispatch</span><span class="params">(<span class="type">const</span> F&amp; func)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="keyword">if</span> (m_Event.<span class="built_in">GetEventType</span>() == T::<span class="built_in">GetStaticType</span>())</span><br><span class="line">&#123;</span><br><span class="line">m_Event.Handled |= <span class="built_in">func</span>(<span class="built_in">static_cast</span>&lt;T&amp;&gt;(m_Event));</span><br><span class="line"><span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="type">bool</span> <span class="title">Application::OnWindowClose</span><span class="params">(WindowCloseEvent&amp; e)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">    </span>&#123;</span><br><span class="line"></span><br><span class="line">        m_Running = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure><p>下面这个事件处理返回的就是false，表示这个事件没有处理完，穿透层，下一层继续处理。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">  <span class="function"><span class="type">bool</span> <span class="title">ImGuiLayer::OnMouseButtonPressedEvent</span><span class="params">(MouseButtonPressedEvent&amp; e)</span> </span>&#123;</span><br><span class="line">ImGuiIO&amp; io = ImGui::<span class="built_in">GetIO</span>();</span><br><span class="line">io.MouseDown[e.<span class="built_in">GetMouseButton</span>()] = <span class="literal">true</span>;</span><br><span class="line">      <span class="built_in">ET_CORE_TRACE</span>(e.<span class="built_in">ToString</span>());</span><br><span class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure><p>这个Handled可以在层设置阻挡，ImGuiLayer这里的设置：<br>阻挡成功Handled就设置为true。</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">ImGuiLayer::OnEvent</span><span class="params">(Event&amp; e)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="keyword">if</span> (m_BlockEvents)</span><br><span class="line">&#123;</span><br><span class="line">ImGuiIO&amp; io = ImGui::<span class="built_in">GetIO</span>();</span><br><span class="line">e.Handled |= e.<span class="built_in">IsInCategory</span>(EventCategoryMouse) &amp; io.WantCaptureMouse;</span><br><span class="line">e.Handled |= e.<span class="built_in">IsInCategory</span>(EventCategoryKeyboard) &amp; io.WantCaptureKeyboard;</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>那么如何设置事件类型呢？<br>在事件发生的时候，glfw会自动调用下面我们在窗口初始化的时候设置的回调函数，这里的data.EventCallback(evnet)就是设置Event的类型</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">        <span class="comment">// Set GLFW callbacks</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">glfwSetWindowSizeCallback</span>(m_Window, [](GLFWwindow* window, <span class="type">int</span> width, <span class="type">int</span> height)</span><br><span class="line"></span><br><span class="line">        &#123;</span><br><span class="line"></span><br><span class="line">            WindowData&amp; data = *(WindowData*)<span class="built_in">glfwGetWindowUserPointer</span>(window);</span><br><span class="line"></span><br><span class="line">            data.Width = width;</span><br><span class="line"></span><br><span class="line">            data.Height = height;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"></span><br><span class="line">            WindowResizeEvent <span class="built_in">event</span>(width, height);</span><br><span class="line"></span><br><span class="line">            data.<span class="built_in">EventCallback</span>(event);</span><br><span class="line"></span><br><span class="line">        &#125;);</span><br></pre></td></tr></table></figure><p>data的类型就是下面的函数指针</p><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> EventCallbackFn = std::function&lt;<span class="built_in">void</span>(Event&amp;)&gt;;</span><br></pre></td></tr></table></figure><p>这里提供了Event类型，EventDispatcher提供了处理事件的函数。<br>这就是我对整个事件系统的理解了。</p>]]></content>
-    
-    
-    <summary type="html">&lt;p&gt;视频学到了&lt;a href=&quot;https://www.bilibili.com/video/BV1mw41187Ac?spm_id_from=333.788.videopod.episodes&amp;vd_source=c7d1bbd34d9982d8b421763e8204f67d&amp;p=22&quot;&gt;S022&lt;/a&gt;，分析一下Hazel的事件系统是如何实现的。&lt;/p&gt;</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（1）</title>
-    <link href="https://cadenxc.com/2025/05/12/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%881%EF%BC%89/"/>
-    <id>https://cadenxc.com/2025/05/12/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%881%EF%BC%89/</id>
-    <published>2025-05-12T11:28:57.000Z</published>
-    <updated>2025-05-27T03:14:24.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="现状"><a href="#现状" class="headerlink" title="现状"></a>现状</h2><p>c++：</p><ul><li>学了CS106L，AP-1400，作业大部分完成了；<br>图形学基础：</li><li><a href="https://sites.cs.ucsb.edu/~lingqi/teaching/games101.html">GAMES101</a>的视频课程看完了，作业写到了MVP变换渲染小奶牛。<br>游戏引擎：</li><li><a href="https://games104.boomingtech.com/en/">GAMES104</a>的视频教程视频，没做作业;</li><li>学过<a href="https://www.libsdl.org/">SDL2</a>；</li><li>跟着Brackeys入门了Godot的基本操作，对游戏引擎要实现的有一个基本的概念。<br>软件工程：</li><li>读了一些经典书籍：《代码大全》《人月神话》《软件开发心理学》；</li><li>其他相关：《Doom启示录》。</li></ul><h2 id="经历"><a href="#经历" class="headerlink" title="经历"></a>经历</h2><p>我先是学了两天的<a href="https://www.vulkan.org/">Vulkan</a>，然后看The Cherno 的 游戏引擎系列的s1~s15。</p><p>比较不自量力的是没有学过OpenGL，想着直接跳入Vulkan，自己用Vulkan写视频里的渲染部分代码。然后就发现Vulkan确实复杂，考虑到我以后很长一段时间都会向The Cherno学习，还是先去学习他的OpenGL系列比较好。而且他后面也用Vulkan，学会了OpenGL应该会让我更好学习Vulkan。</p><p>所以我就暂停学习引擎，去学习OpenGL了。现在看了20节的OpenGL，感觉OpenGL确实比Vulkan简单多了。绘制让我想到了SDL2，MVP变换让我想起了GAMES101，许多知识点开始连起来了。</p><h2 id="想法"><a href="#想法" class="headerlink" title="想法"></a>想法</h2><p>要有自知之明，脚踏实地。</p><p>The Cherno的视频确实很好，我学到了许多。</p><p>我接下来就是学习OpenGL，然后是学习游戏引擎，然后我就可以开始为Godot等开源代码做贡献了。</p><p>游戏和游戏引擎真的很有吸引力。游戏设计我不太懂，但是做游戏引擎的成就感和学到的技术是实打实的。技术成就真的会让我开心。</p><p>接下来的系列文章，大多是我的想法体会。如果你也在学习的路上，不妨来看看。</p>]]></content>
-    
-    
-    <summary type="html">我过去12天的学习经历。</summary>
     
     
     
