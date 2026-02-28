@@ -26,15 +26,19 @@
     var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2},"disqus":{"text":"Load Disqus","order":-1}},"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="CadenXc&#39;s Blog">
-<meta property="og:url" content="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F/index.html">
+  <meta property="og:type" content="article">
+<meta property="og:title" content="从零实现 Render Graph">
+<meta property="og:url" content="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/index.html">
 <meta property="og:site_name" content="CadenXc&#39;s Blog">
 <meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-28T14:32:34.000Z">
+<meta property="article:modified_time" content="2026-02-28T14:33:41.169Z">
 <meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="Vulkan">
+<meta property="article:tag" content="Render Graph">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F/">
+<link rel="canonical" href="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/">
 
 
 <script id="page-configurations">
@@ -42,12 +46,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-CN'
   };
 </script>
 
-  <title>标签: 游戏 | CadenXc's Blog</title>
+  <title>从零实现 Render Graph | CadenXc's Blog</title>
   
 
 
@@ -164,57 +168,134 @@
         <div class="content-wrap">
           
 
-          <div class="content tag">
+          <div class="content post posts-expand">
             
 
+    
   
   
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从零实现 Render Graph
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2026-02-28 22:32:34 / 修改时间：22:33:41" itemprop="dateCreated datePublished" datetime="2026-02-28T22:32:34+08:00">2026-02-28</time>
+            </span>
+
+          
   
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">游戏
-          <small>标签</small>
-        </h2>
-      </div>
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Valine：</span>
+    
+    <a title="valine" href="/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/#valine-comments" itemprop="discussionUrl">
+      <span class="post-comments-count valine-comment-count" data-xid="/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+            <div class="post-description">介绍Render Graph 的学习实现心得。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2025</span>
+        <p>Render Graph，也可以叫 Frame Graph，由<a target="_blank" rel="noopener" href="https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in">这个GDC演讲</a>首次提出，是一个比较现代的渲染架构。</p>
+<p>为什么选择使用 Render Graph 呢？一开始，我只是在参考别人的开源项目时第一次接触到这个概念，简单了解它的作用后就跟着实现了。不过后来在开发测试中，我真正体会到了它的好。</p>
+<p>如果不使用 Render Graph，是可以预见的 debug 地狱。目前我的 Pass 和 Shader 数量都分别超过了 10 个，手动配置这些依赖想想就头痛。而且现在底层实现了有向无环图（DAG），可以很方便地实现图的可视化，同时配合 ImGui 选择中间的 View 输出，能够非常快速地查看和验证渲染结果。</p>
+<h2 id="什么是-Render-Graph"><a href="#什么是-Render-Graph" class="headerlink" title="什么是 Render Graph"></a>什么是 Render Graph</h2><p>其实已经有许多很好的材料讲过这个概念了，比如<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/639001043">这篇大佬的文章</a> 。我就在这里聊聊一开始让我比较困惑的点。</p>
+<p>如何理解 Render Graph？我们可以用现代工厂的流水线来打个简单的比方。</p>
+<ul>
+<li><strong>Render Graph</strong> &#x3D; 整个工厂的自动化调度系统。</li>
+<li><strong>Pass</strong> &#x3D; 工作站 &#x2F; 派工单。它本身不干体力活，主要负责向系统声明需求（明确指出要去哪拿材料，以及最后要产出什么）。</li>
+<li><strong>Shader</strong> &#x3D; 一线工人 &#x2F; 操作手册。它们被固定在工作站里，一旦材料到位，就负责底层的具体工作（比如像素的切割、光照的计算）。</li>
+<li><strong>Resource</strong> &#x3D; 原材料、半成品以及最终的产品。在 Render Graph 中，它既是 Pass 提交的虚拟“提货单”（逻辑资源），也是最终分配在 GPU 上的真实物理显存。</li>
+<li><strong>RenderPath</strong> &#x3D; 架构设计师。他决定了今天到底要造什么级别的产品（比如是走前向渲染还是复杂的混合渲染），并把需要经过的工序图纸交接给工厂。</li>
+</ul>
+<p>通过这种方式，原本手动管理极其痛苦的资源分配和读写依赖，就被这套“工厂系统”自动化接管了。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><p>本引擎的 Render Graph 实现遵循“逻辑抽象 -&gt; 自动推导 -&gt; 物理执行”的原则，核心由以下四个模块构成：</p>
+<h3 id="1-资源的扁平化抽象与显存复用"><a href="#1-资源的扁平化抽象与显存复用" class="headerlink" title="1. 资源的扁平化抽象与显存复用"></a>1. 资源的扁平化抽象与显存复用</h3><p>本引擎采用面向数据设计（DOD）的思路来处理渲染资源，将其严格划分为逻辑与物理两层：</p>
+<ul>
+<li><strong>前端（逻辑句柄）：</strong> 开发者在编写 Pass 时，资源仅体现为一个轻量级的整数句柄，通过名称（如 <code>&quot;Albedo&quot;</code>）来引用，不直接操作物理显存。</li>
+<li><strong>后端（扁平数组）：</strong> 真实的物理资源统一存放在一个连续的数组（<code>std::vector&lt;PhysicalResource&gt;</code>）中，这种紧凑的内存布局有效提高了 CPU 缓存命中率。</li>
+<li><strong>显存复用（Memory Aliasing）：</strong> 系统在编译期执行生命周期分析，计算每个资源的创建与销毁节点。生命周期不重叠的资源会被自动分配到同一块物理显存上。这种复用机制在混合渲染等复杂管线下，为引擎节省了大量的显存空间。</li>
+</ul>
+<h3 id="2-基于链式调用的声明式接口"><a href="#2-基于链式调用的声明式接口" class="headerlink" title="2. 基于链式调用的声明式接口"></a>2. 基于链式调用的声明式接口</h3><p>为了提升代码的可读性，接口设计引入了 Fluent API（链式调用）模式。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">data.normal = builder.<span class="built_in">Write</span>(<span class="string">&quot;Normal&quot;</span>)</span><br><span class="line">                     .<span class="built_in">Format</span>(VK_FORMAT_R16G16B16A16_SFLOAT)</span><br><span class="line">                     .<span class="built_in">SaveAsHistory</span>(<span class="string">&quot;NormalHistory&quot;</span>); <span class="comment">// 标记需要保留到下一帧</span></span><br></pre></td></tr></table></figure>
+<p>这种设计将资源的“配置参数”与“使用意图”结合在一起，保证资源属性在声明时即被明确定义，避免了“先使用后初始化”等潜在错误。</p>
+<h3 id="3-自动化的拓扑排序与同步"><a href="#3-自动化的拓扑排序与同步" class="headerlink" title="3. 自动化的拓扑排序与同步"></a>3. 自动化的拓扑排序与同步</h3><p>在所有 Pass 声明完毕后，系统会自动分析它们之间的读写依赖，完成两项核心工作：</p>
+<ul>
+<li><strong>拓扑排序：</strong> 根据资源的输入输出关系，自动对打乱的 Pass 进行重排，推导出正确的执行顺序。</li>
+<li><strong>屏障推导：</strong> 对比资源在前后 Pass 中的状态变化。如果一个资源从“写入”状态流向“读取”状态，系统会自动在 GPU 指令流中插入对应的<strong>内存屏障（Memory Barrier）</strong> 和布局转换（Layout Transition）。这直接避免了手动管理 Vulkan 同步状态带来的 Debug 难题。</li>
+</ul>
+<h3 id="4-结合-Vulkan-动态渲染"><a href="#4-结合-Vulkan-动态渲染" class="headerlink" title="4. 结合 Vulkan 动态渲染"></a>4. 结合 Vulkan 动态渲染</h3><p>引擎底层接入了 <strong>Vulkan 1.3 的动态渲染（Dynamic Rendering）</strong> 特性。</p>
+<p>传统的 Vulkan 渲染需要预先创建 <code>VkRenderPass</code> 和 <code>VkFramebuffer</code> 对象。而在本系统中，Render Graph 搭配动态渲染实现了“即用即建”：在执行阶段，直接根据当前的资源绑定关系实时组装渲染指令。这种模式大幅精简了底层的样板代码，也让引擎在处理窗口尺寸变化或管线切换时更加简单直接。</p>
+<hr>
+<p>这篇文章主要是博主用来记录学习过程的，欢迎大佬来指正交流。</p>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2025-06-09T22:43:01+08:00"
-              content="2025-06-09">
-          06-09
-        </time>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Vulkan/" rel="tag"># Vulkan</a>
+              <a href="/tags/Render-Graph/" rel="tag"># Render Graph</a>
+          </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2025/06/09/%E3%80%8A%E5%BA%9F%E9%83%BD%E7%89%A9%E8%AF%AD%E3%80%8B%E6%B8%B8%E7%8E%A9%E4%BD%93%E9%AA%8C/" itemprop="url">
-            <span itemprop="name">《废都物语》游玩体验</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/" rel="prev" title="Vulkan Debug心得">
+      <i class="fa fa-chevron-left"></i> Vulkan Debug心得
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
   </article>
-
-    </div>
-  </div>
   
   
-  
-
   
 
 
 
           </div>
           
+    <div class="comments" id="valine-comments"></div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -261,6 +342,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-Render-Graph"><span class="nav-number">1.</span> <span class="nav-text">什么是 Render Graph</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E8%B5%84%E6%BA%90%E7%9A%84%E6%89%81%E5%B9%B3%E5%8C%96%E6%8A%BD%E8%B1%A1%E4%B8%8E%E6%98%BE%E5%AD%98%E5%A4%8D%E7%94%A8"><span class="nav-number">2.1.</span> <span class="nav-text">1. 资源的扁平化抽象与显存复用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%9F%BA%E4%BA%8E%E9%93%BE%E5%BC%8F%E8%B0%83%E7%94%A8%E7%9A%84%E5%A3%B0%E6%98%8E%E5%BC%8F%E6%8E%A5%E5%8F%A3"><span class="nav-number">2.2.</span> <span class="nav-text">2. 基于链式调用的声明式接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E8%87%AA%E5%8A%A8%E5%8C%96%E7%9A%84%E6%8B%93%E6%89%91%E6%8E%92%E5%BA%8F%E4%B8%8E%E5%90%8C%E6%AD%A5"><span class="nav-number">2.3.</span> <span class="nav-text">3. 自动化的拓扑排序与同步</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E7%BB%93%E5%90%88-Vulkan-%E5%8A%A8%E6%80%81%E6%B8%B2%E6%9F%93"><span class="nav-number">2.4.</span> <span class="nav-text">4. 结合 Vulkan 动态渲染</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
