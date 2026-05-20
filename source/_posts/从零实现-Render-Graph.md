@@ -7,51 +7,47 @@ description:
   - 介绍Render Graph 的学习实现心得。
 date: 2026-02-28 22:32:34
 ---
-Render Graph，也可以叫 Frame Graph，由[这个GDC演讲](https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in)首次提出，是一个比较现代的渲染架构。
+ 现代图形 API 将内存管理、多线程管理等大部分工作交由开发者负责，这让开发者能有极高的自由度去榨干硬件性能，但也呈指数级增加了 API 使用的复杂度和困难度。例如，使用原生 Vulkan 画一个三角形就需要写上千行的代码。
+ 软件工程的本质就是管理复杂度。现代引擎必须实现一个中间层架构，在利用图形 API 性能优势的同时，有效降低其复杂度，并让整体渲染管线更加可扩展、易于调试。这个全新的渲染调度大脑就是 **RenderGraph**。
+ RenderGraph（也叫 Frame Graph）最早由 EA 寒霜引擎（Frostbite Engine）团队在[GDC 2017 大会](https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in)上首次提出。它主要由 **RenderPass** 和 **Resource** 构成：
+ - **RenderPass** 是一份元数据，定义了一个完整的渲染流程需要用到的所有资源。
+ - **Resource** 是指 RenderPass 使用的 RenderTarget、Texture、Shader 等物理资产。
+ 
+ 每个 RenderPass 都会显式指定对应的 Input 和 Output 资源。通过这种依赖关系，RenderPass 和 Resource 就形成了一个严密的 **有向无环图（DAG）** 结构。
+![RenderGraphDAG](/images/RenderGraphDAG.png)
 
-为什么选择使用 Render Graph 呢？一开始，我只是在参考别人的开源项目时第一次接触到这个概念，简单了解它的作用后就跟着实现了。不过后来在开发测试中，我真正体会到了它的好。
+ 因为 RenderGraph 在执行实际绘制前拥有**完整一帧的全部信息**，通过分析各个 RenderPass 之间的依赖关系，引擎可以极其方便地对底层资源做全局优化。DAG 也很容易做到图表化，极大方便了现代复杂渲染管线的 Debug。最重要的是，它可以自动化推导 Pass 的执行顺序、自动插入硬件同步屏障，并利用**显存复用（Memory Aliasing）** 显著减少整体的 VRAM 占用。
 
-如果不使用 Render Graph，是可以预见的 debug 地狱。目前我的 Pass 和 Shader 数量都分别超过了 10 个，手动配置这些依赖想想就头痛。而且现在底层实现了有向无环图（DAG），可以很方便地实现图的可视化，同时配合 ImGui 选择中间的 View 输出，能够非常快速地查看和验证渲染结果。
+RenderGraph 的核心理念就是**延迟执行（Deferred Execution）**，将整个渲染流程严格拆分为三个生命周期阶段：
 
-## 什么是 Render Graph
-其实已经有许多很好的材料讲过这个概念了，比如[这篇大佬的文章](https://zhuanlan.zhihu.com/p/639001043) 。我就在这里聊聊一开始让我比较困惑的点。
+### 核心理念：延迟执行 (Deferred Execution)
+ RenderGraph 的核心理念是“延迟执行”，它将整个渲染流程严格拆分为三个界限分明的生命周期阶段：
+#### Phase 1: Setup（声明意图 —— 只声明，不干活）
+在此阶段，上层业务层并不直接操作物理显存。我们使用轻量级的**虚拟资源句柄 (RGResourceHandle)** 来描述所有纹理和 Buffer。
+ ```c++
+ // 案例：声明一个光追阴影 Pass
+ graph.AddPass<ShadowData>("RT_Shadow",
+     // Setup 闭包：声明依赖
+     [&](PassBuilder& builder, ShadowData& data) {
+         data.output = builder.Write("ShadowSignal", ...); // 声明写入
+         builder.Read("Depth"); // 声明读取 G-Buffer 深度
+     },
+     // Execute 闭包：被冻结，直到 Execute 阶段才被唤醒
+     [=](const ShadowData& data, ExecutionContext& ctx) {
+         // 真正的 GPU 指令录制被封装在这里
+         // ctx.TraceRays(...);
+     }
+ );
+ ```
 
-如何理解 Render Graph？我们可以用现代工厂的流水线来打个简单的比方。
-* **Render Graph** = 整个工厂的自动化调度系统。
-* **Pass** = 工作站 / 派工单。它本身不干体力活，主要负责向系统声明需求（明确指出要去哪拿材料，以及最后要产出什么）。
-* **Shader** = 一线工人 / 操作手册。它们被固定在工作站里，一旦材料到位，就负责底层的具体工作（比如像素的切割、光照的计算）。
-* **Resource** = 原材料、半成品以及最终的产品。在 Render Graph 中，它既是 Pass 提交的虚拟“提货单”（逻辑资源），也是最终分配在 GPU 上的真实物理显存。
-* **RenderPath** = 架构设计师。他决定了今天到底要造什么级别的产品（比如是走前向渲染还是复杂的混合渲染），并把需要经过的工序图纸交接给工厂。
+#### Phase 2: Compile（编译优化 —— 算法大脑）
+ 
+这是调度器最显功力的地方，引擎在此阶段执行两项“硬核”优化：
 
-通过这种方式，原本手动管理极其痛苦的资源分配和读写依赖，就被这套“工厂系统”自动化接管了。
+- **拓扑排序与并行分层**：利用 Kahn 算法解析资源依赖。具有相同依赖深度的 Pass 会被划分到同一执行层级，这为 Vulkan 的 Async Compute（异步计算）并行执行提供了完美的调度方案。
+- **显存别名重用 (Memory Aliasing)**：引擎精准扫描每个资源的生命周期（首次写入至末次读取）。生命周期互不重叠的临时资源（例如延迟渲染的中间图与后期的 Bloom 缓冲区）将共享同一块物理显存偏移量。这有效根治了 4K 渲染下的显存吞噬问题。
 
-## 实现
-本引擎的 Render Graph 实现遵循“逻辑抽象 -> 自动推导 -> 物理执行”的原则，核心由以下四个模块构成：
-### 1. 资源的扁平化抽象与显存复用
-本引擎采用面向数据设计（DOD）的思路来处理渲染资源，将其严格划分为逻辑与物理两层：
-* **前端（逻辑句柄）：** 开发者在编写 Pass 时，资源仅体现为一个轻量级的整数句柄，通过名称（如 `"Albedo"`）来引用，不直接操作物理显存。
-* **后端（扁平数组）：** 真实的物理资源统一存放在一个连续的数组（`std::vector<PhysicalResource>`）中，这种紧凑的内存布局有效提高了 CPU 缓存命中率。
-* **显存复用（Memory Aliasing）：** 系统在编译期执行生命周期分析，计算每个资源的创建与销毁节点。生命周期不重叠的资源会被自动分配到同一块物理显存上。这种复用机制在混合渲染等复杂管线下，为引擎节省了大量的显存空间。
-
-### 2. 基于链式调用的声明式接口
-为了提升代码的可读性，接口设计引入了 Fluent API（链式调用）模式。
-```cpp
-
-data.normal = builder.Write("Normal")
-                     .Format(VK_FORMAT_R16G16B16A16_SFLOAT)
-                     .SaveAsHistory("NormalHistory"); // 标记需要保留到下一帧
-```
-这种设计将资源的“配置参数”与“使用意图”结合在一起，保证资源属性在声明时即被明确定义，避免了“先使用后初始化”等潜在错误。
-
-### 3. 自动化的拓扑排序与同步
-在所有 Pass 声明完毕后，系统会自动分析它们之间的读写依赖，完成两项核心工作：
-* **拓扑排序：** 根据资源的输入输出关系，自动对打乱的 Pass 进行重排，推导出正确的执行顺序。
-* **屏障推导：** 对比资源在前后 Pass 中的状态变化。如果一个资源从“写入”状态流向“读取”状态，系统会自动在 GPU 指令流中插入对应的**内存屏障（Memory Barrier）** 和布局转换（Layout Transition）。这直接避免了手动管理 Vulkan 同步状态带来的 Debug 难题。
-
-### 4. 结合 Vulkan 动态渲染
-引擎底层接入了 **Vulkan 1.3 的动态渲染（Dynamic Rendering）** 特性。
-
-传统的 Vulkan 渲染需要预先创建 `VkRenderPass` 和 `VkFramebuffer` 对象。而在本系统中，Render Graph 搭配动态渲染实现了“即用即建”：在执行阶段，直接根据当前的资源绑定关系实时组装渲染指令。这种模式大幅精简了底层的样板代码，也让引擎在处理窗口尺寸变化或管线切换时更加简单直接。
-
----
-这篇文章主要是博主用来记录学习过程的，欢迎大佬来指正交流。
+#### Phase 3: Execute（执行指令 —— 自动化同步）
+在此阶段，调度器线性遍历拓扑层级，激活自动化同步引擎。
+- **状态机推导**：引擎实时比对资源的前后状态（Layout 和 Access Mask）。
+ - **自动插入屏障**：如果发现状态不匹配，系统会自动调用 Vulkan 的 `vkCmdPipelineBarrier2` 指令。开发者再也不用去关心复杂的写后读（RAW）等冲突，引擎从架构层面确保了每一帧执行的正确。

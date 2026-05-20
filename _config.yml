@@ -109,3 +109,10 @@ server:
   port: 5000
   compress: true
   header: true
+
+# Search Configuration
+search:
+  path: search.json
+  field: post
+  content: true
+  format: html

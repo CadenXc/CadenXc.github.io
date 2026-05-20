@@ -15,7 +15,7 @@ description:
 ### 验证层与结构化日志
 首先是启用[Vulkan 验证层](https://geek-docs.com/vulkan/vulkan-tutorial/understand-validation-layers.html)。
 同时配合使用开源日志库 [spdlog](https://github.com/gabime/spdlog) 实现一个自定义的日志类。
-使用不同颜色的l日志标识。这样当前验证层出错时能一眼看出。
+使用不同颜色的日志标识。这样当前验证层出错时能一眼看出。
 
 ### 给资源起名字
 当验证层报错时，默认情况下它只会告诉你：“`VkImage 0x12ab34cd` 的布局不正确”。在一个拥有几十张贴图的混合管线中，这种报错无异于大海捞针。
@@ -42,7 +42,7 @@ description:
 
 
 
-下面这个的作用？
+下面这段代码使用宏来强制检查错误。
 ```C++
 #define VK_CHECK(result) \
 
