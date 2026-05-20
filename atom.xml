@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-04-22T05:29:52.885Z</updated>
+  <updated>2026-05-19T23:58:53.018Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,25 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Vulkan混合渲染器</title>
+    <link href="https://cadenxc.com/2026/05/20/Vulkan%E6%B7%B7%E5%90%88%E6%B8%B2%E6%9F%93%E5%99%A8/"/>
+    <id>https://cadenxc.com/2026/05/20/Vulkan%E6%B7%B7%E5%90%88%E6%B8%B2%E6%9F%93%E5%99%A8/</id>
+    <published>2026-05-19T23:54:55.000Z</published>
+    <updated>2026-05-19T23:58:53.018Z</updated>
+    
+    <content type="html"><![CDATA[<p>这个是一个渲染器，我的毕业设计项目，做了三四个月。</p><p>我这里参考了其他的项目，也使用的AI，vibe coding。我很难说自己懂了什么？一点一点搭建起来感觉挺好的。也许是因为有着毕业设计这一因素，我在答辩完的10天后才开始写这篇介绍。</p><p>这个要如何介绍呢？最好把论文放过来就行了？鉴于我已经写过了毕业论文，感觉放论文有点奇怪。这里就简单写写，放个视频吧。</p><video width="100%" controls>  <source src="/videoes/vulkanRenderer.mp4" type="video/mp4">  您的浏览器不支持播放该视频。</video><p><a href="https://github.com/CadenXc/HybridRenderer">HybridRenderer</a></p>]]></content>
+    
+    
+    <summary type="html">毕业设计视频演示。</summary>
+    
+    
+    
+    
+    <category term="Vulkan" scheme="https://cadenxc.com/tags/Vulkan/"/>
+    
+  </entry>
   
   <entry>
     <title>从零实现 Render Graph</title>
@@ -436,25 +455,6 @@
     
     
     <category term="游戏" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>游戏引擎学习之旅（4）批渲染和调试</title>
-    <link href="https://cadenxc.com/2025/06/08/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%884%EF%BC%89%E6%89%B9%E6%B8%B2%E6%9F%93%E5%92%8C%E8%B0%83%E8%AF%95/"/>
-    <id>https://cadenxc.com/2025/06/08/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%97%85%EF%BC%884%EF%BC%89%E6%89%B9%E6%B8%B2%E6%9F%93%E5%92%8C%E8%B0%83%E8%AF%95/</id>
-    <published>2025-06-08T08:19:38.000Z</published>
-    <updated>2025-07-03T00:54:02.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>上次博客之后，先是抽象出了一个Renderer2D的类。这个类调用了是Renderer部分其他的代码，不知道OpenGL或者其他图形学API的具体实现如何。这样用户使用的时候只需要调用提供的静态函数就行了，图形学API是不影响用户写好的代码，是一个相当清晰的不错的设计。</p><p> 接下来就是在这个已经使用可以工作的Rednerer2D类里实现批渲染（Batch Rendering）。</p><p> 我对批渲染很有好感，这个得加进引擎里。之前用SDL2画地牢的地图时，我试着在更新初始化地图值时把绘制命令放在了for循环，导致每添加到一个图片到SDL_surface里就会调用一次绘制命令。这样地图绘制时是从上往下一点一点渲染，花了一百多秒完成。之后把绘制命令拿出for循环，这样就是在等Surface一次更新完后在绘制，地图一瞬间就绘制好了。</p><p>实现批渲染的方法。之前的实现是用一个数组存储，把位置纹理坐标等放在起，每个图形都是单独的一个数组，现在把数组改成结构体，不同的成员变量对应了不同属性，更新的值会插入在一个数组里。另有一个结构体来管理各种数值，前面的和纹理数组都在这个里面当成为变量。声明上述为一个静态结构体，每次调用是设置的数值等都在这里设置，这样在绘制的时候只使用结构体里的一个索引数组，渲染是就把前面的整个当成是一个图形绘制。</p><p>不过在添加纹理的时候出了一个Bug。我只绘制纯颜色块时正确，绘制带纹理的方块时候就是黑的，没有渲染出纹理，而本该是纯颜色的方块却有渲染出了纹理。</p><p>那就开始Debug吧。我先是查看代码，看了最近两次提交代码的修改部分，没发现问题。然后对这个错误进行测试，发现当绘制多个带纹理的方块时，本该是纯颜色的方块会渲染出最后一个绑定的纹理。问题出在了纹理设置上。当我在纹理渲染的函数里手动把slot 修改为0.0f时，渲染出了该有给的纹理，把slot设为没有纹理的绑定的值（比如3）就会变成默认的白色，说明这是纹理slot绑定出的问题。然后我找到了纹理绑定的那段代码，传了slot值（不指定就是默认复制的0），功能正常。</p><p>我有些震惊与这样的错误。我现在学习这个引擎的方式的流程如下。</p><ol><li>看一遍视频，了解本次代码该实现的效果；</li><li>点开GitHub对应提交的代码提交，理解代码的设计和实现；</li><li>编写代码；</li><li>改错；</li><li>提交到GitHub仓库。</li></ol><p>我再次看视频发现视频里是有传入参数的，所以这个提交的代码就没有达成视频里的功能。我默认认为代码要测试无误才提交，也相信这个是对的。但是TheCherno这个大牛居然在提交的时候没有注意到这个。</p><p>也许TheCherno是想提醒我要多思考，不要光剽窃代码。想告诉我大牛也会有不小心的时候，想说我也可以成为大牛。</p><p>谢谢你，TheCherno！</p>]]></content>
-    
-    
-    <summary type="html">视频看到了第66节了。</summary>
-    
-    
-    
-    
-    <category term="游戏引擎" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/"/>
     
   </entry>
   
