@@ -6,7 +6,7 @@
   <link href="https://cadenxc.com/atom.xml" rel="self"/>
   
   <link href="https://cadenxc.com/"/>
-  <updated>2026-05-19T23:58:53.018Z</updated>
+  <updated>2026-07-24T12:57:21.341Z</updated>
   <id>https://cadenxc.com/</id>
   
   <author>
@@ -15,6 +15,48 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>相机移动时模型出现黑影</title>
+    <link href="https://cadenxc.com/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/"/>
+    <id>https://cadenxc.com/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/</id>
+    <published>2026-07-24T12:44:07.000Z</published>
+    <updated>2026-07-24T12:57:21.341Z</updated>
+    
+    <content type="html"><![CDATA[<p>debug过程。先使用RenderDoc抓帧，<br><img data-src="/images/Pasted_image_20260722152504.png"><br>先在左侧的Event Browser找到一个用于分析的glDrawElements，然后在Texture viewer窗口里右键像素，右下角的Pixel Context就会取到对应颜色（图中模型马赛克处理）。点击右下角的History会出现窗口<br><img data-src="/images/Pasted_image_20260722152925.png"><br>，图中的EID 284执行后RGB异常，Tex After里的RGB都变成了0.00,而我点击一个正确渲染的像素则不是全0。<br>然后打开Pipeline State窗口，选择FS(因为是OpenGL渲染)，然后能点击Edit编译Shader。RenderDoc能汇总执行的shader生成一个main.glsl，RnederDoc可以直接编辑shader代码并应用。抓了正常和非正常的两帧，查看Pipline State里的FS窗口，对比后发现Teature绑定的贴图不同，修改Shader去掉AO的因素影响后模型上的黑影消失，相比正常的模型偏亮。<br>最后排查出问题的原因。没有添加AO贴图，但模型的材质使用了AO，导致AO绑定的贴图是之前的残留。相机移动重新计算AO，导致了模型有时会变暗的问题。<br>解决方法：出问题的模型是因为使用的需要AO贴图的材质但没有AO，换不用AO的材质或者给那些模型加上AO。 </p>]]></content>
+    
+    
+    <summary type="html">记录一次Debug过程。</summary>
+    
+    
+    
+    
+    <category term="Debug" scheme="https://cadenxc.com/tags/Debug/"/>
+    
+    <category term="RenderDoc" scheme="https://cadenxc.com/tags/RenderDoc/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>pixyz-max-sp-auto-pipeline</title>
+    <link href="https://cadenxc.com/2026/06/25/pixyz-max-sp-auto-pipeline/"/>
+    <id>https://cadenxc.com/2026/06/25/pixyz-max-sp-auto-pipeline/</id>
+    <published>2026-06-25T01:44:01.000Z</published>
+    <updated>2026-06-25T01:44:49.536Z</updated>
+    
+    <content type="html"><![CDATA[<p>美术希望资产处理的流程能实现一定程度的自动化。<br>执行后能批量处理模型。</p><p>涉及到的软件有三个 pixyz2019.2 max2020 Substance 3D Painter7.1.1。这几个软件的版本不算新，在实际写时遇到了一些问题。<br> 这三个软件都支持python脚本。可以完成基本的操作，pixyz的脚本能满足需要，不过这个版本没有batch版，现在的运行都像是在模拟点击. Max正常，有batch版，功能满足需要。SP没有batch版，能走完流程导出图片，但是无法使用脚本在图层添加材质和烘焙。后来SP改成了最新的12.0.01,虽然还是有窗口的，但是脚本更新了，能满足要求。</p><p>AI的作用。帮我验证是否可行。我在之前没有用过这三个软件，AI帮我分析脚本的文档，帮我看看报错信息，帮我先实现一个mvp验证可行性。我意识中AI的这些工作如果我花时间学习Python和各个软件的脚本API是能自己写的，但是我不需要这样，AI相当于加快了这一过程。即使我不知道对应脚本的语法，这个工作还是在我已知的范围内。</p><p>人的作用。我在这里先分析了要做的每一步的流程。把每个软件要做的步骤写下来了。验证AI生成的脚本是否符合要求。提出修改意见。</p><p>这个不算是我擅长的，但是给我这个需求后我知道我能用AI做出来。AI时代人能做的更多了，对程序员提出了不同的要求。</p>]]></content>
+    
+    
+    <summary type="html">几个美术软件写脚本实现自动化</summary>
+    
+    
+    
+    
+    <category term="ai" scheme="https://cadenxc.com/tags/ai/"/>
+    
+    <category term="python" scheme="https://cadenxc.com/tags/python/"/>
+    
+  </entry>
   
   <entry>
     <title>Vulkan混合渲染器</title>
@@ -415,46 +457,6 @@
     <category term="操作系统" scheme="https://cadenxc.com/tags/%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F/"/>
     
     <category term="6.S081" scheme="https://cadenxc.com/tags/6-S081/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>新电脑配置指南</title>
-    <link href="https://cadenxc.com/2025/06/16/%E6%96%B0%E7%94%B5%E8%84%91%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97/"/>
-    <id>https://cadenxc.com/2025/06/16/%E6%96%B0%E7%94%B5%E8%84%91%E9%85%8D%E7%BD%AE%E6%8C%87%E5%8D%97/</id>
-    <published>2025-06-16T02:37:04.000Z</published>
-    <updated>2025-11-23T02:14:32.365Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="一、基础设置"><a href="#一、基础设置" class="headerlink" title="一、基础设置"></a>一、基础设置</h2><ul><li><p><strong>用户名设置</strong><br>系统激活注册时建议使用英文用户名。某些开发工具对路径兼容性较差，含中文可能导致异常。</p></li><li><p><strong>语言与界面优化</strong>  </p><ul><li>添加英文语言包，方便中英文切换。  </li><li>在任务栏设置中关闭“小组件”和“任务视图”，并隐藏搜索框，让界面更简洁清爽。</li></ul></li><li><p><strong>系统优化</strong>  </p><ul><li>将桌面路径迁移到 D 盘（或任意非 C 盘路径），减轻系统盘压力。  </li><li>打开以管理员身份运行的 PowerShell，执行以下命令关闭休眠功能，进一步节省 C 盘空间：  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">powercfg -h off</span><br></pre></td></tr></table></figure><blockquote><p><em>个人观点：Windows 的休眠功能并不理想，平时直接关机更为稳妥。</em></p></blockquote></li></ul></li><li><p><strong>安全策略调整</strong><br>在微软电脑管家（Microsoft PC Manager）中，将除 C 盘以外的所有磁盘添加为“信任磁盘”或“排除项”，避免开发时频繁弹出安全提示。</p></li></ul><hr><h2 id="二、D-盘目录结构"><a href="#二、D-盘目录结构" class="headerlink" title="二、D 盘目录结构"></a>二、D 盘目录结构</h2><p>为了避免路径问题，所有文件夹名使用英文，并统一集中管理：</p><ul><li><code>BrowserDownload</code>：浏览器下载目录</li><li><code>Caden</code>：我的英文名，放一些临时文件或杂项  </li><li><code>Code</code>：各类项目代码存放地  </li><li><code>NetworkDiskAndBtDownload</code>：网盘及 BT 下载文件存储  </li><li><code>Repositories</code>：存放从 GitHub 克隆下来的仓库  </li><li><code>Software</code>：软件下载目录</li></ul><hr><h2 id="三、软件安装与配置"><a href="#三、软件安装与配置" class="headerlink" title="三、软件安装与配置"></a>三、软件安装与配置</h2><h3 id="浏览器"><a href="#浏览器" class="headerlink" title="浏览器"></a>浏览器</h3><ul><li>安装 <strong>Google Chrome</strong>，并将其和系统自带的 <strong>Microsoft Edge</strong> 的默认下载路径设置为 <code>D:\BrowserDownload</code>。</li></ul><h3 id="开发工具"><a href="#开发工具" class="headerlink" title="开发工具"></a>开发工具</h3><ul><li><a href="https://git-scm.com/">Git</a></li><li><a href="https://git-fork.com/">Fork</a>：Git 图形界面工具</li><li><a href="https://github.com/PowerShell/PowerShell">PowerShell</a>：推荐配合 [Oh My Posh] 美化终端</li><li><a href="https://github.com/BeyondDimension/SteamTools">Watt Toolkit</a>：可用于 GitHub 下载加速</li></ul><h3 id="输入法与语言工具"><a href="#输入法与语言工具" class="headerlink" title="输入法与语言工具"></a>输入法与语言工具</h3><ul><li><a href="https://rime.im/">小狼毫输入法</a><br>配置 <a href="https://github.com/iDvel/rime-ice">雾凇拼音</a>，并使用小鹤双拼方案</li><li><a href="https://www.eudic.net/">欧陆词典</a>：好用的英文词典</li><li><a href="https://github.com/Pixpin/Pixpin">PixPin</a>：截图标注工具，开源且好用</li></ul><blockquote><p>可以移步到这篇 <a href="https://cadenxc.com/2025/06/02/%E4%BB%A3%E7%A0%81%E4%B9%8B%E5%A4%96%E7%9A%84%E6%8E%A8%E8%8D%90/">推荐博客</a>。</p></blockquote><hr><h2 id="四、数据迁移建议"><a href="#四、数据迁移建议" class="headerlink" title="四、数据迁移建议"></a>四、数据迁移建议</h2><ul><li><strong>浏览器数据</strong>：登录账号同步书签和插件即可。</li><li><strong>项目代码 &#x2F; 配置文件</strong>：使用 Git 进行云端同步，方便管理。</li><li><strong>敏感或私密数据</strong>：不建议上传云盘，可通过 U 盘或局域网方式传输。</li></ul><hr><p>如果你有什么建议，欢迎在评论区留言交流！</p>]]></content>
-    
-    
-    <summary type="html">本文记录我配置新的Windows 11电脑的过程，包含个人的一些使用偏好，供有相似需求的朋友参考。</summary>
-    
-    
-    
-    <category term="经验分享" scheme="https://cadenxc.com/categories/%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/"/>
-    
-    
-    <category term="Windows" scheme="https://cadenxc.com/tags/Windows/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>《废都物语》游玩体验</title>
-    <link href="https://cadenxc.com/2025/06/09/%E3%80%8A%E5%BA%9F%E9%83%BD%E7%89%A9%E8%AF%AD%E3%80%8B%E6%B8%B8%E7%8E%A9%E4%BD%93%E9%AA%8C/"/>
-    <id>https://cadenxc.com/2025/06/09/%E3%80%8A%E5%BA%9F%E9%83%BD%E7%89%A9%E8%AF%AD%E3%80%8B%E6%B8%B8%E7%8E%A9%E4%BD%93%E9%AA%8C/</id>
-    <published>2025-06-09T14:43:01.000Z</published>
-    <updated>2025-06-09T14:49:26.000Z</updated>
-    
-    <content type="html"><![CDATA[<p>尽量不剧透。</p><hr><p>这个游戏剧情融合了各种神话，虚构了一个丰富的大河世界。<br>主角有四个出身可以选，四个出身的线大体相同，但又有各自独特的剧情，每条线各自揭开了部分剧情的谜底。<br>可以在酒馆里集结队友，踏上旅途，像跑团。游戏内有多名队友，陪你冒险，都有着独特的个性，喜欢某位角色可以一直带着，可能会解锁队友个人的独特剧情。<br>在游戏过程中也有挺恶搞的地方，比如睡美人、怪仙，夜种王，也许会让你心领神会，忍俊不禁。</p><p>个人是按盗贼-&gt;骑士-&gt;法师-&gt;贤者的顺序玩了共计四周目，并不是那种多周目大佬。<br>游戏难度我选的普通，因为游戏的的多周目有继承机制，所以在我玩的周目里最难的是第一周目的盗贼出身。身板脆，不知道隐藏宝箱在哪里，对地图多大和谜题没有底，完全对世界陌生，这是我开荒的体验。</p><p>挺过初期的困难后就渐渐被玩法和剧情吸引了。 作为一个宝可梦爱好者，对西方奇幻和跑团也颇有兴趣的人，这个经典RPG战斗，那些非战斗的技能和以前宝可梦里的秘传技能等在战斗外的地方也可以使用的技能类似，龙与地下城式的队友集结和地图探险，不错。但是剧情就没有仔细看，以至于有的地方卡关查攻略了。不过这样也可以，我本来玩的时候也没有想着剧情会多优秀，到了后面几周目才渐渐琢磨出味道来，之后看了别人剧情梳理我才对剧情有一个完整的概念。</p><p>本来第一周目打得我都快弃坑了，不经意间在一次回档的时候没有选择打死龙蛋而是试着给它命名，结果孵出来了一个龙女，虽然这剧情有些熟悉但是我喜欢。想想这我之前不就算是错过了吗，鬼使神差让我读了一个前一点的档，出来一个龙女儿，这我得带着她通关呀。就继续打了，之后渐渐喜欢上了这个游戏。</p><p>游玩体验最好的是第四周目，打最终boss时，主角是贤者防御高，先给队友加攻加防，然后一直放回复技能就行，输出就靠队友，无脑点威力最高的技能。</p><p>别被画风劝退了，挺不错的。或者也可以等等重置版。</p>]]></content>
-    
-    
-    <summary type="html">游戏不错。</summary>
-    
-    
-    
-    
-    <category term="游戏" scheme="https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F/"/>
     
   </entry>
   
