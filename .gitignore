@@ -1,6 +1,36 @@
-#.DS_Store
-#node_modules
-#db.json
-#.deploy_git
-#public
+# Operating system and editor files
+.DS_Store
+.obsidian/
 
+# Dependencies and package-manager logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Hexo cache and generated/deployment directories
+db.json
+public/
+.deploy_git/
+
+# Legacy generated site files previously copied to the repository root
+/2025/
+/2026/
+/about/
+/archives/
+/categories/
+/css/
+/images/
+/js/
+/lib/
+/page/
+/tags/
+/videoes/
+/index.html
+/atom.xml
+/baidusitemap.xml
+/search.json
+/sitemap.txt
+/sitemap.xml
+/CNAME
