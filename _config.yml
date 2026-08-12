@@ -3,13 +3,13 @@
 ## Source: https://github.com/hexojs/hexo/
 
 # Site
-title: CadenXc's Blog
-subtitle: ''
-description: ''
-keywords:
+title: CadenXc
+subtitle: C++ · Game Engines · Real-Time Rendering
+description: Notes on C++, game engine architecture, real-time rendering, and engineering practice.
+keywords: C++, Game Engine, Real-Time Rendering, Vulkan, Graphics Programming
 author: CadenXc
 language: zh-CN
-timezone: ''
+timezone: Asia/Shanghai
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'

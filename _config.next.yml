@@ -1,0 +1,59 @@
+# Site-specific NexT settings. Keep theme customizations here so that the
+# themes/next submodule can be updated without overwriting local choices.
+
+scheme: Gemini
+darkmode: true
+
+menu:
+  home: / || fa fa-home
+  archives: /archives/ || fa fa-archive
+  tags: /tags/ || fa fa-tags
+  about: /about/ || fa fa-user
+  GitHub: https://github.com/CadenXc || fab fa-github
+
+menu_settings:
+  icons: true
+  badges: true
+
+sidebar:
+  position: left
+  width: 260
+  offset: 12
+
+avatar:
+  url: /images/avatar.gif
+  rounded: true
+  rotated: false
+
+social:
+  GitHub: https://github.com/CadenXc || fab fa-github
+
+social_icons:
+  enable: true
+  icons_only: false
+  transition: false
+
+mobile_layout_economy: true
+
+codeblock:
+  highlight_theme: normal
+  copy_button:
+    enable: true
+    show_result: true
+    style: flat
+
+reading_progress:
+  enable: true
+  position: top
+  color: "#37c6c0"
+  height: 3px
+
+local_search:
+  enable: true
+  trigger: auto
+  top_n_per_article: 1
+  unescape: false
+  preload: false
+
+motion:
+  enable: false
