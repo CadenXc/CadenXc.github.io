@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false,"width":260},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"giscus","storage":true,"lazyload":false,"nav":null,"activeClass":"giscus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="接入即时模式 UI 后，引擎为什么仍然需要支持可视化编辑、持久化、运行实例和脚本交互的 UI 文档模型。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="接入 Dear ImGui 之后，为什么还需要 UI 文档？">
+<meta property="og:url" content="https://cadenxc.com/2026/09/15/%E6%8E%A5%E5%85%A5ImGui%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81UI%E6%96%87%E6%A1%A3/index.html">
+<meta property="og:site_name" content="CadenXc">
+<meta property="og:description" content="接入即时模式 UI 后，引擎为什么仍然需要支持可视化编辑、持久化、运行实例和脚本交互的 UI 文档模型。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-09-15T07:00:00.000Z">
+<meta property="article:modified_time" content="2026-09-15T07:00:00.000Z">
+<meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="C++">
+<meta property="article:tag" content="游戏引擎">
+<meta property="article:tag" content="Dear ImGui">
+<meta property="article:tag" content="UI 架构">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://cadenxc.com/2026/09/15/%E6%8E%A5%E5%85%A5ImGui%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81UI%E6%96%87%E6%A1%A3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>接入 Dear ImGui 之后，为什么还需要 UI 文档？ | CadenXc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="CadenXc" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CadenXc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">C++ · Game Engines · Real-Time Rendering</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">32</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">35</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-github">
+
+    <a href="https://github.com/CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/09/15/%E6%8E%A5%E5%85%A5ImGui%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81UI%E6%96%87%E6%A1%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="Notes on C++, game engine architecture, real-time rendering, and engineering practice.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          接入 Dear ImGui 之后，为什么还需要 UI 文档？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-09-15 15:00:00" itemprop="dateCreated datePublished" datetime="2026-09-15T15:00:00+08:00">2026-09-15</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/" itemprop="url" rel="index"><span itemprop="name">游戏引擎</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">软件架构</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">接入即时模式 UI 后，引擎为什么仍然需要支持可视化编辑、持久化、运行实例和脚本交互的 UI 文档模型。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><strong>本文要回答的问题：</strong></p>
+<blockquote>
+<p>Dear ImGui 已经能够创建和显示控件，为什么游戏引擎仍然需要独立的 UI Document？</p>
+</blockquote>
+<h2 id="接入-ImGui-并不等于完成-UI-架构替换"><a href="#接入-ImGui-并不等于完成-UI-架构替换" class="headerlink" title="接入 ImGui 并不等于完成 UI 架构替换"></a>接入 ImGui 并不等于完成 UI 架构替换</h2><p>这次 UI 重构最初的目标，是使用成熟的开源 UI 库 Dear ImGui，替代引擎中老旧的自研控件实现。Dear ImGui 持续维护，也适合工具界面，接入它可以减少维护控件绘制与交互的成本。</p>
+<p>但在旧 UI 逐步退出后，我发现替换控件实现并不会自动为引擎带来 UI 资产编辑能力。用户需要创建、编辑和保存自己的 UI，这要求引擎用一个结构化模型保存节点层级、类型、属性和稳定 ID。这个模型就是 UI Document。旧编辑器创建的控件对象树，则同时承担了层级与属性、编辑预览、输入交互和序列化等职责。</p>
+<h2 id="旧控件树究竟承担了哪些职责"><a href="#旧控件树究竟承担了哪些职责" class="headerlink" title="旧控件树究竟承担了哪些职责"></a>旧控件树究竟承担了哪些职责</h2><p>在旧 UI 架构里，引擎读取 XML 后，会根据节点类型创建容器、按钮等保留模式（retained-mode）控件对象，并组成父子树。这棵树负责布局、绘制、输入和事件。</p>
+<p>旧 UI 编辑器打开 UI 文件时，也会创建一棵旧控件对象树，编辑区直接使用这棵树预览。用户保存时，再把控件树序列化回 XML。</p>
+<p>旧编辑器必须先创建旧控件对象，才能编辑 UI 资产。Hierarchy（层级面板）根据对象间的父子关系展示层级，Inspector（属性查看器）直接修改这些对象的属性。预览和保存也依赖控件对象的属性与序列化接口，删除旧控件实现会同时破坏编辑、预览和保存。这种设计可以工作，本身并不是错误，但它使“使用 Dear ImGui 替换旧控件实现”的重构目标很难被单独推进。</p>
+<h2 id="即时模式-UI-何时需要文档模型"><a href="#即时模式-UI-何时需要文档模型" class="headerlink" title="即时模式 UI 何时需要文档模型"></a>即时模式 UI 何时需要文档模型</h2><p>游戏引擎中较为固定的工具面板，可以由程序员直接在代码中调用 Dear ImGui，每帧重新提交界面。只有程序员维护这些界面时，通常不需要通用的 UI Document。</p>
+<p>当引擎用户需要创建、编辑和保存自己的 UI 时，界面内容便不能全部写死在代码中。引擎需要一个结构化模型描述 UI 节点的层级、类型和属性，这份模型就是 UI Document。Dear ImGui 解决“这一帧如何绘制和交互”，UI Document 解决“这个 UI 资产由什么组成”。因此，并不是所有使用 Dear ImGui 的界面都需要 Document；需要由用户制作并持久化的 UI 资产才需要独立的 authoring model。</p>
+<h2 id="设计数据与运行时状态的区别"><a href="#设计数据与运行时状态的区别" class="headerlink" title="设计数据与运行时状态的区别"></a>设计数据与运行时状态的区别</h2><p>新架构先把 UI 文件解析为 Authoring Document，再从同一份 Document 创建一个或多个 Runtime Instance（运行实例）：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">UI 文件 → Authoring Document ─┬→ Runtime Instance A</span><br><span class="line">                              └→ Runtime Instance B</span><br></pre></td></tr></table></figure>
+
+<p>Document 保存用户编辑的资产定义，例如节点类型、层级和初始可见性。这些属性为新实例提供初始值，不代表实例运行过程中的当前状态，也不应在普通运行过程中被脚本隐式修改。</p>
+<p>Runtime Instance 保存 UI 在运行过程中变化的状态，例如当前是否可见、文本输入内容与光标位置、列表选择和滚动位置。每个 Runtime Instance 都与源 Document 和其他实例隔离，其中一个实例发生变化，不会影响其他实例。</p>
+<p>这种隔离保护了资产的默认状态。一个按钮在运行时被脚本隐藏，并不表示用户希望它默认隐藏；再次创建实例时，它仍应从 Document 中记录的初始值开始。</p>
+<h2 id="各层必须遵守的约束"><a href="#各层必须遵守的约束" class="headerlink" title="各层必须遵守的约束"></a>各层必须遵守的约束</h2><h3 id="Document-是可编辑结构的唯一数据源"><a href="#Document-是可编辑结构的唯一数据源" class="headerlink" title="Document 是可编辑结构的唯一数据源"></a>Document 是可编辑结构的唯一数据源</h3><p>UI 的节点层级、可编辑属性和稳定身份只能由 Document 决定。</p>
+<p>如果 Document 和预览对象都能修改结构，就会出现两个数据源；两边内容不一致时，保存、撤销和 Inspector 不知道应该相信谁。</p>
+<p>编辑命令只修改 Document，布局快照与 Dear ImGui 预览只是根据 Document 生成的可丢弃视图，不能反向成为资产数据。</p>
+<p>即使预览构建失败，Document 仍能继续编辑、撤销和保存；重新生成预览也不会改变资产内容。</p>
+<h3 id="稳定身份不能由列表索引代替"><a href="#稳定身份不能由列表索引代替" class="headerlink" title="稳定身份不能由列表索引代替"></a>稳定身份不能由列表索引代替</h3><p>每个可编辑节点必须拥有不随重排改变的 stable ID。</p>
+<p>列表索引只表示节点当前所在的位置。假设 <code>Exit</code> 按钮原本位于 index 1，在执行一条延迟操作前，列表头部插入了新节点，<code>Exit</code> 就会移动到其他索引。此时继续执行“修改 index 1”的操作，可能会修改另一个按钮。</p>
+<p>因此，选择、撤销记录和延迟操作都应携带 stable ID，执行时再通过 ID 查找当前节点。节点已不存在时，应拒绝操作，不能退回使用旧索引并修改其他节点。</p>
+<p>可以通过“记录操作—重排列表—执行操作”验证最终修改的仍是原节点。</p>
+<h3 id="序列化格式不是内存架构"><a href="#序列化格式不是内存架构" class="headerlink" title="序列化格式不是内存架构"></a>序列化格式不是内存架构</h3><p>XML 只负责将 Document 保存到文件，以及从文件恢复 Document。编辑器、预览和 Runtime 应依赖 Document，而不是直接操作 XML 节点。</p>
+<p>如果把 XML 换成 JSON，但保存的信息完全相同，那么反序列化后的 Document 也应该相同，后面的编辑和运行逻辑不需要变化。</p>
+<p>因此，更换文件格式不等于完成 UI 架构重构。</p>
+<h2 id="如何逐步迁移调用方，避免一次性切换"><a href="#如何逐步迁移调用方，避免一次性切换" class="headerlink" title="如何逐步迁移调用方，避免一次性切换"></a>如何逐步迁移调用方，避免一次性切换</h2><p>迁移旧 UI 时，我选择保留底层实现，先逐个迁移上层消费者；确认消费者引用归零且替代路径已经验证后，再删除旧实现。这种 consumer-first 策略可以让引擎在迁移期间保持可编译、可运行，而不是先破坏底层，再根据大量编译错误集中修复上层。</p>
+<p>如果先删除底层，系统可能长时间无法编译，也就很难判断刚刚完成的修改是否正确，或新的错误究竟由哪一步引入。每迁移一个或一批消费者，都应恢复到可编译、可运行的状态，验证相关行为后再独立提交。</p>
+<p>这符合小步重构的基本思想：每次只改变一小部分，及时验证，保持可以回退，并用独立提交保存阶段成果。旧实现只有在没有真实消费者之后，才成为可以安全删除的代码。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Dear ImGui 解决每帧的绘制与交互，但不提供用户可编辑的资产模型。Document 保存可编辑、可持久化的资产定义，Runtime Instance 隔离每个运行实例的状态，而 XML 只是当前使用的序列化格式。</p>
+<p>迁移过程采用 consumer-first 策略，使系统保持可编译、可运行和可回退。最终，除了 C++ 与脚本编译，还需要通过“创建、编辑、保存、重开、运行时加载、脚本交互”的完整人工链路验证实际行为。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/ocornut/imgui">Dear ImGui 官方仓库</a>：介绍 Dear ImGui 的目标、适用场景和每帧提交 UI 的工作方式。</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/ocornut/imgui/wiki/About-the-IMGUI-paradigm">About the IMGUI paradigm</a>：说明 immediate-mode API 与应用数据所有权之间的关系。</li>
+<li><a target="_blank" rel="noopener" href="https://docs.unity3d.com/6000.0/Documentation/Manual/UIE-create-ui-document-component.html">Unity UI Document component</a>：一个公开引擎中 UI 结构文档与场景、渲染桥接分离的例子。</li>
+<li><a target="_blank" rel="noopener" href="https://martinfowler.com/books/refactoring.html">Refactoring: Improving the Design of Existing Code</a>：Martin Fowler 对小步、保持行为且持续可工作的重构方法的介绍。</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/cpp/" rel="tag"># C++</a>
+              <a href="/tags/%E6%B8%B8%E6%88%8F%E5%BC%95%E6%93%8E/" rel="tag"># 游戏引擎</a>
+              <a href="/tags/Dear-ImGui/" rel="tag"># Dear ImGui</a>
+              <a href="/tags/UI-%E6%9E%B6%E6%9E%84/" rel="tag"># UI 架构</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/" rel="prev" title="从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW">
+      <i class="fa fa-chevron-left"></i> 从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+<div class="comments giscus-container">
+  <script src="https://giscus.app/client.js"
+    data-repo="CadenXc/myblog-source"
+    data-repo-id="R_kgDOOg81fA"
+    data-category="General"
+    data-category-id="DIC_kwDOOg81fM4DDMp1"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="preferred_color_scheme"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async></script>
+</div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E5%85%A5-ImGui-%E5%B9%B6%E4%B8%8D%E7%AD%89%E4%BA%8E%E5%AE%8C%E6%88%90-UI-%E6%9E%B6%E6%9E%84%E6%9B%BF%E6%8D%A2"><span class="nav-number">1.</span> <span class="nav-text">接入 ImGui 并不等于完成 UI 架构替换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A7%E6%8E%A7%E4%BB%B6%E6%A0%91%E7%A9%B6%E7%AB%9F%E6%89%BF%E6%8B%85%E4%BA%86%E5%93%AA%E4%BA%9B%E8%81%8C%E8%B4%A3"><span class="nav-number">2.</span> <span class="nav-text">旧控件树究竟承担了哪些职责</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B3%E6%97%B6%E6%A8%A1%E5%BC%8F-UI-%E4%BD%95%E6%97%B6%E9%9C%80%E8%A6%81%E6%96%87%E6%A1%A3%E6%A8%A1%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">即时模式 UI 何时需要文档模型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%95%B0%E6%8D%AE%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E7%8A%B6%E6%80%81%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">4.</span> <span class="nav-text">设计数据与运行时状态的区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%84%E5%B1%82%E5%BF%85%E9%A1%BB%E9%81%B5%E5%AE%88%E7%9A%84%E7%BA%A6%E6%9D%9F"><span class="nav-number">5.</span> <span class="nav-text">各层必须遵守的约束</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Document-%E6%98%AF%E5%8F%AF%E7%BC%96%E8%BE%91%E7%BB%93%E6%9E%84%E7%9A%84%E5%94%AF%E4%B8%80%E6%95%B0%E6%8D%AE%E6%BA%90"><span class="nav-number">5.1.</span> <span class="nav-text">Document 是可编辑结构的唯一数据源</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%B3%E5%AE%9A%E8%BA%AB%E4%BB%BD%E4%B8%8D%E8%83%BD%E7%94%B1%E5%88%97%E8%A1%A8%E7%B4%A2%E5%BC%95%E4%BB%A3%E6%9B%BF"><span class="nav-number">5.2.</span> <span class="nav-text">稳定身份不能由列表索引代替</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%8F%E5%88%97%E5%8C%96%E6%A0%BC%E5%BC%8F%E4%B8%8D%E6%98%AF%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84"><span class="nav-number">5.3.</span> <span class="nav-text">序列化格式不是内存架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E9%80%90%E6%AD%A5%E8%BF%81%E7%A7%BB%E8%B0%83%E7%94%A8%E6%96%B9%EF%BC%8C%E9%81%BF%E5%85%8D%E4%B8%80%E6%AC%A1%E6%80%A7%E5%88%87%E6%8D%A2"><span class="nav-number">6.</span> <span class="nav-text">如何逐步迁移调用方，避免一次性切换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">8.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="CadenXc"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">CadenXc</p>
+  <div class="site-description" itemprop="description">Notes on C++, game engine architecture, real-time rendering, and engineering practice.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/CadenXc" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">CadenXc</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

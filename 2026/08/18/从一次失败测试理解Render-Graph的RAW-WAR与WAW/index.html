@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false,"width":260},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"giscus","storage":true,"lazyload":false,"nav":null,"activeClass":"giscus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="从 HybridRenderer 的真实失败测试出发，理解 Render Graph 如何建立资源依赖，以及依赖边、执行层和 Vulkan barrier 为什么不能混为一谈。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW">
+<meta property="og:url" content="https://cadenxc.com/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/index.html">
+<meta property="og:site_name" content="CadenXc">
+<meta property="og:description" content="从 HybridRenderer 的真实失败测试出发，理解 Render Graph 如何建立资源依赖，以及依赖边、执行层和 Vulkan barrier 为什么不能混为一谈。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-08-18T05:10:00.000Z">
+<meta property="article:modified_time" content="2026-09-08T05:10:00.000Z">
+<meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="Vulkan">
+<meta property="article:tag" content="Render Graph">
+<meta property="article:tag" content="GPU 同步">
+<meta property="article:tag" content="RAW">
+<meta property="article:tag" content="WAR">
+<meta property="article:tag" content="WAW">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://cadenxc.com/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW | CadenXc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="CadenXc" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CadenXc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">C++ · Game Engines · Real-Time Rendering</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">32</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">35</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-github">
+
+    <a href="https://github.com/CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="Notes on C++, game engine architecture, real-time rendering, and engineering practice.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-08-18 13:10:00" itemprop="dateCreated datePublished" datetime="2026-08-18T13:10:00+08:00">2026-08-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-09-08 13:10:00" itemprop="dateModified" datetime="2026-09-08T13:10:00+08:00">2026-09-08</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/%E6%B8%B2%E6%9F%93%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">渲染架构</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从 HybridRenderer 的真实失败测试出发，理解 Render Graph 如何建立资源依赖，以及依赖边、执行层和 Vulkan barrier 为什么不能混为一谈。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="文章要回答的核心问题"><a href="#文章要回答的核心问题" class="headerlink" title="文章要回答的核心问题"></a>文章要回答的核心问题</h2><blockquote>
+<p>Render Graph 已经知道 Pass 的先后关系，为什么还需要 Vulkan barrier？</p>
+</blockquote>
+<p>本文只聚焦一条主线：</p>
+<ol>
+<li>从资源读写声明推导 RAW、WAR、WAW dependency edge。</li>
+<li>从 dependency edge 得到合法的 Pass 执行顺序和 layer。</li>
+<li>在真正录制 GPU 命令时，根据 stage、access 和 layout 生成 barrier。</li>
+</ol>
+<p>这三步解决的是不同层次的问题：资源声明描述 Pass 想做什么，Dependency Edge 和 Layer 计算逻辑顺序，Barrier 再把这种顺序落实为 GPU 能执行的同步。只有声明而没有依赖分析，Render Graph 无法发现访问冲突；只有 Edge 而没有正确的 Barrier，GPU 侧仍然得不到执行顺序和内存可见性保证。</p>
+<h2 id="从失败测试开始"><a href="#从失败测试开始" class="headerlink" title="从失败测试开始"></a>从失败测试开始</h2><h3 id="当时看见了什么"><a href="#当时看见了什么" class="headerlink" title="当时看见了什么"></a>当时看见了什么</h3><p>测试创建了 <code>WriterA</code> 和 <code>WriterB</code>，让它们连续写入同一张 Image。测试失败后，我发现两个 Writer 被放进了同一个 Layer，这意味着 Render Graph 没有建立 WAW 依赖，最终写入顺序无法得到保证。画面可能暂时正常，但这只能说明 GPU 和驱动碰巧给出了预期结果。</p>
+<p>加入 WAW Edge 后，新的 same-state WAW Barrier 测试再次失败。即使两个 Writer 的 Layout、Access 和 Stage 相同，也不代表第一次写入已经完成。当前引擎会在 CPU 上将各个 Pass 依次录入同一个 Command Buffer，再统一提交给 Graphics Queue；Dependency Edge 负责组织逻辑顺序，而正确的 Vulkan Barrier 才能把这种顺序落实为 GPU 的执行与内存依赖。</p>
+<h3 id="为什么这个问题值得写"><a href="#为什么这个问题值得写" class="headerlink" title="为什么这个问题值得写"></a>为什么这个问题值得写</h3><ol>
+<li>在遇到这个测试前，我只能从英文全称大致猜出 RAW、WAR、WAW 表示资源访问顺序，却不清楚它们会怎样影响 GPU 执行。</li>
+<li>两次写入可能在 GPU 上发生重叠。没有正确同步时，画面即使正确也可能只是巧合，不能作为同步正确的证据。</li>
+<li>我开始学会分层验证：用单元测试检查 Edge、Layer 和 Barrier 判定，用日志检查 CPU 控制流，再用 Vulkan Synchronization Validation 检查真实命令中的 Hazard。</li>
+</ol>
+<h2 id="最小心智模型：Pass、Resource-与-DAG"><a href="#最小心智模型：Pass、Resource-与-DAG" class="headerlink" title="最小心智模型：Pass、Resource 与 DAG"></a>最小心智模型：Pass、Resource 与 DAG</h2><h3 id="Pass-声明的是意图"><a href="#Pass-声明的是意图" class="headerlink" title="Pass 声明的是意图"></a>Pass 声明的是意图</h3><ul>
+<li><code>Read(resource)</code>：这个 Pass 消费资源已有内容。</li>
+<li><code>Write(resource)</code>：这个 Pass 会产生或覆盖资源内容。</li>
+</ul>
+<p>RenderGraph 主要分为 3 个阶段：<code>Setup</code>、<code>Compile</code>、<code>Execute</code>，这三步都发生在 CPU。真正的 GPU 执行发生在 <code>vkQueueSubmit</code> 之后。</p>
+<p><code>Setup</code> 阶段里，Pass 声明自己的 <code>Inputs</code> 和 <code>Outputs</code>。</p>
+<p><code>Compile</code> 依据这些声明分析资源依赖，构建有向无环图（DAG），并计算 pass 的 <code>Edge</code> 和 <code>Layer</code>（执行批次）。</p>
+<p><code>Execute</code> 阶段按 <code>Layer</code> 顺序，在 CPU 侧向命令缓冲区录制指令（先 barrier，再 draw&#x2F;dispatch）。</p>
+<p>当命令缓冲区提交到队列（<code>vkQueueSubmit</code>）后，GPU 才真正开始执行这些命令。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">WriterA -----&gt; ReaderA -----&gt; WriterB</span><br><span class="line">     \                         ^</span><br><span class="line">      --------&gt; ReaderB -------|</span><br></pre></td></tr></table></figure>
+
+<h3 id="Edge-与-Layer"><a href="#Edge-与-Layer" class="headerlink" title="Edge 与 Layer"></a>Edge 与 Layer</h3><p>也就是把“谁要先做”变成一张机器能理解的规则表。</p>
+<p>Rule 先出来后，才会把可执行顺序交给 GPU。</p>
+<ul>
+<li><strong>Edge</strong>：两个 Pass 之间必须满足的 happens-before 约束。</li>
+<li><strong>Layer</strong>：根据 DAG 拓扑关系计算出的执行层级。</li>
+<li>同一 layer 只表示图上没有直接或间接依赖，不自动等于 GPU 一定并行执行。</li>
+</ul>
+<p>如果所有 Pass 恰好按正确顺序添加，程序也可能正常运行，但这种正确性依赖人工维护，顺序改变后就可能失效。Dependency Edge 会明确记录 Pass 之间真正必要的先后关系，让 Render Graph 能够检查非法依赖、进行拓扑排序并计算 Layer，而不是简单地按照添加顺序串行执行。不过，当前项目仍然按照 Pass 的扫描顺序区分资源的新旧版本，因此还不能认为它支持任意添加顺序下的自动重排。</p>
+<h2 id="RAW、WAR、WAW-分别是什么"><a href="#RAW、WAR、WAW-分别是什么" class="headerlink" title="RAW、WAR、WAW 分别是什么"></a>RAW、WAR、WAW 分别是什么</h2><p>RAW、WAR、WAW 和 RAR 描述的是两个 Pass 对同一资源的前后访问关系，其中 R 是 Read，A 是 After，W 是 Write。</p>
+<ul>
+<li><strong>RAW（Read After Write）</strong>：先写后读。Reader 必须等待 Writer，否则可能观察到旧数据、尚未完成的写入或未定义结果。</li>
+<li><strong>WAR（Write After Read）</strong>：先读后写。Writer 必须等待此前所有 Reader 完成，否则可能提前覆盖 Reader 仍在使用的内容。</li>
+<li><strong>WAW（Write After Write）</strong>：先写后写。即使两次写入的 Layout 相同，也要建立正确同步，否则两个 Write 的顺序无法得到保证。</li>
+<li><strong>RAR（Read After Read）</strong>：先读后读。两个 Reader 都不修改资源，通常不会互相破坏，因此一般不需要额外依赖。</li>
+</ul>
+<h2 id="如何从访问序列构建依赖"><a href="#如何从访问序列构建依赖" class="headerlink" title="如何从访问序列构建依赖"></a>如何从访问序列构建依赖</h2><p>Render Graph 在 CPU 上按顺序分析每个 Pass，并为每项资源维护两份访问历史：</p>
+<p>对每个 resource 维护：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">latestWriter   最近一次写入它的 Pass</span><br><span class="line">activeReaders  最近一次写入之后、当前写入之前的所有 Reader</span><br></pre></td></tr></table></figure>
+
+<h3 id="遇到-Read"><a href="#遇到-Read" class="headerlink" title="遇到 Read"></a>遇到 Read</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">如果存在 latestWriter：latestWriter -&gt; currentReader</span><br><span class="line">把 currentReader 加入 activeReaders</span><br></pre></td></tr></table></figure>
+
+<h3 id="遇到-Write"><a href="#遇到-Write" class="headerlink" title="遇到 Write"></a>遇到 Write</h3><figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">如果存在 latestWriter：latestWriter -&gt; currentWriter       // WAW</span><br><span class="line">对每个 activeReader：reader -&gt; currentWriter                // WAR</span><br><span class="line">清空 activeReaders</span><br><span class="line">latestWriter = currentWriter</span><br></pre></td></tr></table></figure>
+
+<h3 id="还要守住的-invariant"><a href="#还要守住的-invariant" class="headerlink" title="还要守住的 invariant"></a>还要守住的 invariant</h3><ul>
+<li>重复依赖只能计数一次。</li>
+<li>Pass 不得依赖自己。</li>
+<li>读取未声明或不存在的资源必须在 Compile 阶段报错。</li>
+<li>生成依赖表后必须覆盖每一个 Pass。</li>
+<li>图中出现 cycle 时必须拒绝编译。</li>
+</ul>
+<h2 id="Edge、Layer-与-Vulkan-Barrier-不是一回事"><a href="#Edge、Layer-与-Vulkan-Barrier-不是一回事" class="headerlink" title="Edge、Layer 与 Vulkan Barrier 不是一回事"></a>Edge、Layer 与 Vulkan Barrier 不是一回事</h2><h3 id="Dependency-edge：解决逻辑顺序"><a href="#Dependency-edge：解决逻辑顺序" class="headerlink" title="Dependency edge：解决逻辑顺序"></a>Dependency edge：解决逻辑顺序</h3><p>Dependency Edge 回答的是：“谁必须在谁之前？”例如 <code>WriterA -&gt; ReaderA</code> 表示 ReaderA 依赖 WriterA 的结果。它属于 Render Graph Compiler 的 CPU 侧模型，用来检查依赖、拓扑排序和计算 Layer。Edge 只是记录逻辑关系，本身没有在 GPU 侧建立执行依赖或内存可见性保证。</p>
+<h3 id="Layer：表达-DAG-的调度结果"><a href="#Layer：表达-DAG-的调度结果" class="headerlink" title="Layer：表达 DAG 的调度结果"></a>Layer：表达 DAG 的调度结果</h3><p>Layer 回答的是：“当前哪些 Pass 已经没有尚未处理的前驱？”Render Graph 每一轮把所有入度为 0 的 Pass 放进同一个 Layer，再移除它们对后继的影响。处在同一 Layer，只能说明图中没有发现这些 Pass 之间的直接或间接依赖，不代表 GPU 一定会同时执行它们。当前项目中的 Layer 是一种执行组织方式，不能直接宣传为已经实现 Async Compute 或多队列并行。</p>
+<h3 id="Image-barrier：解决-GPU-执行与内存依赖"><a href="#Image-barrier：解决-GPU-执行与内存依赖" class="headerlink" title="Image barrier：解决 GPU 执行与内存依赖"></a>Image barrier：解决 GPU 执行与内存依赖</h3><p>即使命令在 Command Buffer 中按照“先写后读”的顺序录制，GPU 的不同流水线阶段仍可能重叠工作。命令顺序本身也不保证前一次写入已经完成并且对后一次访问可见，所以还需要 Vulkan Barrier 回答：</p>
+<ul>
+<li>前一次访问必须完成到哪个 pipeline stage？</li>
+<li>前一次写入何时对后续访问可见？</li>
+<li>后一次访问从哪个 stage、以什么 access 开始？</li>
+<li>image 是否需要 layout transition？</li>
+</ul>
+<p>项目最终把资源状态映射为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">srcStageMask / srcAccessMask / oldLayout</span><br><span class="line">dstStageMask / dstAccessMask / newLayout</span><br></pre></td></tr></table></figure>
+
+<p>然后通过 <code>VkImageMemoryBarrier2</code> 和 <code>vkCmdPipelineBarrier2</code> 表达同步。</p>
+<p>其中 Stage 表示访问发生在 GPU 流水线的哪个阶段，Access 表示这个阶段进行了哪种内存读写，Layout 表示 Image 当前以什么方式使用。<code>src</code> 描述 Barrier 前面的访问，<code>dst</code> 描述 Barrier 后面的访问。例如，从 Color Attachment 写入转为 Fragment Shader 采样时，需要等待 <code>COLOR_ATTACHMENT_OUTPUT</code> 阶段的 <code>COLOR_ATTACHMENT_WRITE</code>，让结果对 <code>FRAGMENT_SHADER</code> 阶段的 <code>SHADER_READ</code> 可见，并把 Image 从 <code>COLOR_ATTACHMENT_OPTIMAL</code> 转换为 <code>SHADER_READ_ONLY_OPTIMAL</code>。</p>
+<p>调用 <code>vkCmdPipelineBarrier2</code> 时，CPU 仍然只是在向 Command Buffer 录制命令。直到 Command Buffer 被提交，并且 GPU 执行到该位置时，Barrier 才真正产生作用；<code>vkQueueSubmit</code> 返回也不代表 GPU 已经完成执行。</p>
+<p>因此三者的职责可以概括为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Edge：逻辑上谁等待谁</span><br><span class="line">Layer：哪些 Pass 在依赖图中可以处于同一批次</span><br><span class="line">Barrier：GPU 在哪些 Stage/Access 之间建立执行与内存依赖</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>Edge 能让两个 Pass 按正确顺序录制或执行，但它本身不等于 Vulkan 内存可见性保证。</p>
+</blockquote>
+<h2 id="为什么-layout-相同的-WAW-仍可能需要-barrier"><a href="#为什么-layout-相同的-WAW-仍可能需要-barrier" class="headerlink" title="为什么 layout 相同的 WAW 仍可能需要 barrier"></a>为什么 layout 相同的 WAW 仍可能需要 barrier</h2><p>错误直觉：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">oldLayout == newLayout，所以不需要 barrier。</span><br></pre></td></tr></table></figure>
+
+<p>这个判断混淆了 Barrier 的不同职责，需要拆开三个维度：</p>
+<ol>
+<li><strong>Layout</strong>：image 当前采用哪种 GPU 使用布局。</li>
+<li><strong>Stage</strong>：访问发生在流水线的什么阶段。</li>
+<li><strong>Access</strong>：该阶段进行读还是写，以及访问类型是什么。</li>
+</ol>
+<p>两个 Pass 都以相同 layout 写同一张 image 时：</p>
+<ul>
+<li>layout transition 可以不发生；</li>
+<li>但第一次写与第二次写之间仍然存在 WAW memory hazard；</li>
+<li>后一个 Writer 仍要等待前一个 Writer 的相关写入，因此需要 execution dependency 和 memory dependency。</li>
+</ul>
+<p>当前项目通过 <code>RequiresImageMemoryBarrier()</code> 判断前后状态是否需要 Barrier。除了检查 Layout 和 Access 是否改变，它还检查前后任意一侧是否包含写访问：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">return</span> stateChanged ||</span><br><span class="line">       <span class="built_in">HasImageWriteAccess</span>(current.access) ||</span><br><span class="line">       <span class="built_in">HasImageWriteAccess</span>(target.access);</span><br></pre></td></tr></table></figure>
+
+<p>因此，即使前后都是 <code>GENERAL + SHADER_WRITE</code>，状态看起来完全相同，写访问仍会让这个函数返回 <code>true</code>。这正是之前 same-state WAW 测试需要覆盖的问题。</p>
+<table>
+<thead>
+<tr>
+<th>情况</th>
+<th>Layout 是否变化</th>
+<th>是否有写访问</th>
+<th>是否需要 barrier</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>相同状态 RAR</td>
+<td>否</td>
+<td>否</td>
+<td>通常不需要</td>
+</tr>
+<tr>
+<td>相同状态 WAW</td>
+<td>否</td>
+<td>是</td>
+<td>需要同步写访问</td>
+</tr>
+<tr>
+<td>Color Attachment -&gt; Sampled</td>
+<td>是</td>
+<td>前写后读</td>
+<td>需要同步并 transition</td>
+</tr>
+</tbody></table>
+<p>所以，Barrier 不等于 Layout Transition。Layout Transition 只是 Image Barrier 可能承担的一项工作；即使 Layout 不变，只要存在 RAW、WAR 或 WAW，也仍然要建立相应的同步。其中 RAW、WAW 需要适当的 Memory Dependency，WAR 通常只需要 Execution Dependency。</p>
+<h2 id="测试如何推动修复"><a href="#测试如何推动修复" class="headerlink" title="测试如何推动修复"></a>测试如何推动修复</h2><p>这次修复不是从画面异常开始的，而是从一个最小单元测试开始的。画面即使正常，也可能只是 GPU 和驱动碰巧按我期望的顺序执行；直接检查 Render Graph 的不变量，更容易稳定复现问题和定位原因。</p>
+<h3 id="第一次失败：两个-Writer-进入同一-Layer"><a href="#第一次失败：两个-Writer-进入同一-Layer" class="headerlink" title="第一次失败：两个 Writer 进入同一 Layer"></a>第一次失败：两个 Writer 进入同一 Layer</h3><p>测试只构造两个写入同一资源的 Pass：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">WriterA -&gt; WriterB</span><br></pre></td></tr></table></figure>
+
+<p>正确结果应该是两个 Layer，因为 WriterB 必须等待 WriterA。修复前记录的测试输出是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[FAIL] two writers of the same resource must have a WAW dependency</span><br></pre></td></tr></table></figure>
+
+<p>这说明旧的依赖构建只处理了 Writer 到 Reader 的 RAW，没有处理 Writer 到 Writer 的 WAW。加入 <code>lastWriter -&gt; currentWriter</code> 的 Edge 后，测试能够得到：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Layer 0：[WriterA]</span><br><span class="line">Layer 1：[WriterB]</span><br></pre></td></tr></table></figure>
+
+<p>这个测试证明的是 CPU 侧 <code>Compile()</code> 为这两个 Writer 建立了依赖，并把它们分到不同 Layer。它没有调用 <code>Execute()</code>，更没有提交真实 GPU 命令，因此不能证明 Vulkan Barrier 已经正确生成。</p>
+<h3 id="第二次失败：相同状态的-WAW-被跳过"><a href="#第二次失败：相同状态的-WAW-被跳过" class="headerlink" title="第二次失败：相同状态的 WAW 被跳过"></a>第二次失败：相同状态的 WAW 被跳过</h3><p>有了 WAW Edge，并不代表 GPU 侧同步已经成立。旧的 Barrier 判断主要比较 Layout 和 Access 是否改变，因此两个状态完全相同的 Writer 可能被认为“不需要 Barrier”：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">WriterA：COLOR_ATTACHMENT_OPTIMAL + COLOR_ATTACHMENT_WRITE</span><br><span class="line">WriterB：COLOR_ATTACHMENT_OPTIMAL + COLOR_ATTACHMENT_WRITE</span><br></pre></td></tr></table></figure>
+
+<p>当时新增的测试失败为：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[FAIL] same-state write-after-write must require a barrier</span><br></pre></td></tr></table></figure>
+
+<p>Layout 相同只表示不需要 Layout Transition，并不表示 WriterA 已经完成。修复后的 <code>RequiresImageMemoryBarrier()</code> 只要发现前后任意一侧包含写访问，就会要求 Barrier；同时保留了相同状态 RAR 不产生多余 Barrier 的测试。</p>
+<p>不过，这个测试只是直接调用一个 CPU 判断函数。它能证明函数对这组输入返回 <code>true</code>，不能证明 <code>BuildBarriers()</code> 一定在正确的位置调用了它，也不能证明 <code>VkImageMemoryBarrier2</code> 的 Image、Stage 和 Access 都填写正确，更不能证明 <code>vkCmdPipelineBarrier2()</code> 已经被录制和提交。</p>
+<h3 id="第三次失败：Writer-没有等待所有-Reader"><a href="#第三次失败：Writer-没有等待所有-Reader" class="headerlink" title="第三次失败：Writer 没有等待所有 Reader"></a>第三次失败：Writer 没有等待所有 Reader</h3><p>为了覆盖 WAR，又构造了下面的访问序列：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">             ┌-&gt; ReaderA -┐</span><br><span class="line">WriterA -----|             |-&gt; WriterB</span><br><span class="line">             └-&gt; ReaderB -┘</span><br></pre></td></tr></table></figure>
+
+<p>WriterB 不仅要等待 WriterA 的旧写入，还要等待 ReaderA 和 ReaderB 都读完旧版本。为此，Render Graph 增加了 <code>readersSinceLastWrite</code>，记录最近一次写入之后的所有 Reader，并在新的 Writer 到来时为它们分别建立 WAR Edge。写入产生新版本后，这份 Reader 记录才会被清空。</p>
+<p>最终依赖和 Layer 应该是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">WriterA：[]</span><br><span class="line">ReaderA：[WriterA]</span><br><span class="line">ReaderB：[WriterA]</span><br><span class="line">WriterB：[WriterA, ReaderA, ReaderB]</span><br><span class="line"></span><br><span class="line">Layer 0：[WriterA]</span><br><span class="line">Layer 1：[ReaderA, ReaderB]</span><br><span class="line">Layer 2：[WriterB]</span><br></pre></td></tr></table></figure>
+
+<p>项目 Git 历史中，WAW 与同状态 Barrier 修复对应 <code>c12d21a</code>，WAR 修复对应 <code>c77a25a</code>，后续拓扑 Layer 重构对应 <code>a78b6f7</code>。这些提交可以证明代码和测试在何时发生变化，但提交记录本身仍不能代替实际运行验证。</p>
+<h3 id="不同测试分别能证明什么"><a href="#不同测试分别能证明什么" class="headerlink" title="不同测试分别能证明什么"></a>不同测试分别能证明什么</h3><table>
+<thead>
+<tr>
+<th>验证方式</th>
+<th>可以证明</th>
+<th>不能证明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Dependency&#x2F;Layer 单元测试</td>
+<td>最小访问序列生成了预期 Edge 和 Layer</td>
+<td>真实 GPU Barrier 正确</td>
+</tr>
+<tr>
+<td>Barrier 判定函数测试</td>
+<td>指定 ResourceState 组合是否要求 Barrier</td>
+<td>Barrier 已被正确录制和提交</td>
+</tr>
+<tr>
+<td>Vulkan synchronization validation</td>
+<td>本次实际执行路径中没有被验证层发现的同步错误</td>
+<td>所有场景、GPU、驱动和 Render Path 都正确</td>
+</tr>
+<tr>
+<td>固定场景截图</td>
+<td>当前输入下没有观察到明显画面异常</td>
+<td>不存在隐藏的同步 hazard</td>
+</tr>
+<tr>
+<td>RenderDoc&#x2F;Nsight</td>
+<td>实际命令、资源内容和 Barrier 是否符合预期</td>
+<td>未捕获路径和所有硬件都正确</td>
+</tr>
+</tbody></table>
+<p>因此，<code>TestWritersArePlacedInSeparateLayers()</code> 通过，只能证明依赖图中的 WAW 规则通过了这个最小测试，不能证明 GPU Barrier 正确。<code>RequiresImageMemoryBarrier()</code> 测试通过，也只能证明判断函数的返回值，不能证明 <code>vkCmdPipelineBarrier2()</code> 已经被录制。即使 synchronization validation 没有报错，结论也只能限定在本次运行实际覆盖的场景、功能开关、Render Path、GPU 和驱动上。</p>
+<p>这次修复采用的验证阶梯是：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Dependency 与 Layer 单元测试</span><br><span class="line">  -&gt; Barrier 判定测试</span><br><span class="line">  -&gt; Debug/Release 构建</span><br><span class="line">  -&gt; Vulkan validation + synchronization validation</span><br><span class="line">  -&gt; 固定场景运行与截图</span><br><span class="line">  -&gt; RenderDoc / Nsight 检查</span><br></pre></td></tr></table></figure>
+
+<p>越靠前的测试越小、越稳定，也越容易定位问题；越靠后的验证越接近真实 GPU 执行，但成本更高。它们是互相补充的证据，不能互相替代。</p>
+<h2 id="当前边界与收获"><a href="#当前边界与收获" class="headerlink" title="当前边界与收获"></a>当前边界与收获</h2><p>这次修改完善了 RAW、WAR、WAW 依赖、拓扑 Layer 和同状态写入的 Barrier 判定，但它仍不是一个覆盖所有 Vulkan 情形的 Render Graph。当前状态主要按整张 Image 跟踪；所有 Pass 仍录制进同一个 Command Buffer；代码也没有形成经过验证的 Multi-Queue、Async Compute、Queue Family Ownership Transfer 或完整 Transient Resource Aliasing。Layer 表示图中可能并行的逻辑批次，不等于 GPU 已经并行执行。</p>
+<p>相比记住几个缩写，我真正得到的是一套分析方法：先列出每个 Pass 对资源的读写，再手算 RAW、WAR、WAW Edge；接着检查 Layer 是否满足依赖；最后检查 Barrier 的 Stage、Access 和 Layout 是否覆盖真实 GPU 访问。我也开始能区分证据的边界：单元测试验证 CPU 侧规则，Synchronization Validation 检查本次运行覆盖的 Vulkan 路径，画面正常则不能单独证明同步正确。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>Render Graph 的价值不是简单隐藏 Vulkan API，而是把 Pass 的资源访问意图变成可以分析和测试的同步约束。Dependency Edge 决定逻辑上谁等待谁，Layer 表达依赖图的调度结果，Barrier 再让 GPU 在正确的 Stage 和 Access 范围内看到正确数据。缺少其中任何一层，都可能得到一帧“现在能运行，但正确性没有保证”的画面。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://docs.vulkan.org/spec/latest/chapters/synchronization.html">Vulkan Specification：Synchronization and Cache Control</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.vulkan.org/guide/latest/synchronization_examples.html">Vulkan Guide：Synchronization Examples</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/syncval_usage.md">Vulkan Validation Layers：Synchronization Validation</a></li>
+<li>HybridRenderer：<code>RenderGraph::BuildDependencyGraph()</code>、<code>RenderGraph::BuildBarriers()</code>、<code>RequiresImageMemoryBarrier()</code> 与 <code>tests/RenderGraphTests.cpp</code></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Vulkan/" rel="tag"># Vulkan</a>
+              <a href="/tags/Render-Graph/" rel="tag"># Render Graph</a>
+              <a href="/tags/GPU-%E5%90%8C%E6%AD%A5/" rel="tag"># GPU 同步</a>
+              <a href="/tags/RAW/" rel="tag"># RAW</a>
+              <a href="/tags/WAR/" rel="tag"># WAR</a>
+              <a href="/tags/WAW/" rel="tag"># WAW</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/" rel="prev" title="相机移动时模型出现黑影">
+      <i class="fa fa-chevron-left"></i> 相机移动时模型出现黑影
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/09/15/%E6%8E%A5%E5%85%A5ImGui%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%98%E9%9C%80%E8%A6%81UI%E6%96%87%E6%A1%A3/" rel="next" title="接入 Dear ImGui 之后，为什么还需要 UI 文档？">
+      接入 Dear ImGui 之后，为什么还需要 UI 文档？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+<div class="comments giscus-container">
+  <script src="https://giscus.app/client.js"
+    data-repo="CadenXc/myblog-source"
+    data-repo-id="R_kgDOOg81fA"
+    data-category="General"
+    data-category-id="DIC_kwDOOg81fM4DDMp1"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="preferred_color_scheme"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async></script>
+</div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E7%AB%A0%E8%A6%81%E5%9B%9E%E7%AD%94%E7%9A%84%E6%A0%B8%E5%BF%83%E9%97%AE%E9%A2%98"><span class="nav-number">1.</span> <span class="nav-text">文章要回答的核心问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E5%BC%80%E5%A7%8B"><span class="nav-number">2.</span> <span class="nav-text">从失败测试开始</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BD%93%E6%97%B6%E7%9C%8B%E8%A7%81%E4%BA%86%E4%BB%80%E4%B9%88"><span class="nav-number">2.1.</span> <span class="nav-text">当时看见了什么</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%BF%99%E4%B8%AA%E9%97%AE%E9%A2%98%E5%80%BC%E5%BE%97%E5%86%99"><span class="nav-number">2.2.</span> <span class="nav-text">为什么这个问题值得写</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E5%BF%83%E6%99%BA%E6%A8%A1%E5%9E%8B%EF%BC%9APass%E3%80%81Resource-%E4%B8%8E-DAG"><span class="nav-number">3.</span> <span class="nav-text">最小心智模型：Pass、Resource 与 DAG</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Pass-%E5%A3%B0%E6%98%8E%E7%9A%84%E6%98%AF%E6%84%8F%E5%9B%BE"><span class="nav-number">3.1.</span> <span class="nav-text">Pass 声明的是意图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Edge-%E4%B8%8E-Layer"><span class="nav-number">3.2.</span> <span class="nav-text">Edge 与 Layer</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RAW%E3%80%81WAR%E3%80%81WAW-%E5%88%86%E5%88%AB%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">4.</span> <span class="nav-text">RAW、WAR、WAW 分别是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BB%8E%E8%AE%BF%E9%97%AE%E5%BA%8F%E5%88%97%E6%9E%84%E5%BB%BA%E4%BE%9D%E8%B5%96"><span class="nav-number">5.</span> <span class="nav-text">如何从访问序列构建依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%87%E5%88%B0-Read"><span class="nav-number">5.1.</span> <span class="nav-text">遇到 Read</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%81%87%E5%88%B0-Write"><span class="nav-number">5.2.</span> <span class="nav-text">遇到 Write</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%98%E8%A6%81%E5%AE%88%E4%BD%8F%E7%9A%84-invariant"><span class="nav-number">5.3.</span> <span class="nav-text">还要守住的 invariant</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Edge%E3%80%81Layer-%E4%B8%8E-Vulkan-Barrier-%E4%B8%8D%E6%98%AF%E4%B8%80%E5%9B%9E%E4%BA%8B"><span class="nav-number">6.</span> <span class="nav-text">Edge、Layer 与 Vulkan Barrier 不是一回事</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dependency-edge%EF%BC%9A%E8%A7%A3%E5%86%B3%E9%80%BB%E8%BE%91%E9%A1%BA%E5%BA%8F"><span class="nav-number">6.1.</span> <span class="nav-text">Dependency edge：解决逻辑顺序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Layer%EF%BC%9A%E8%A1%A8%E8%BE%BE-DAG-%E7%9A%84%E8%B0%83%E5%BA%A6%E7%BB%93%E6%9E%9C"><span class="nav-number">6.2.</span> <span class="nav-text">Layer：表达 DAG 的调度结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Image-barrier%EF%BC%9A%E8%A7%A3%E5%86%B3-GPU-%E6%89%A7%E8%A1%8C%E4%B8%8E%E5%86%85%E5%AD%98%E4%BE%9D%E8%B5%96"><span class="nav-number">6.3.</span> <span class="nav-text">Image barrier：解决 GPU 执行与内存依赖</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-layout-%E7%9B%B8%E5%90%8C%E7%9A%84-WAW-%E4%BB%8D%E5%8F%AF%E8%83%BD%E9%9C%80%E8%A6%81-barrier"><span class="nav-number">7.</span> <span class="nav-text">为什么 layout 相同的 WAW 仍可能需要 barrier</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E5%A6%82%E4%BD%95%E6%8E%A8%E5%8A%A8%E4%BF%AE%E5%A4%8D"><span class="nav-number">8.</span> <span class="nav-text">测试如何推动修复</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%EF%BC%9A%E4%B8%A4%E4%B8%AA-Writer-%E8%BF%9B%E5%85%A5%E5%90%8C%E4%B8%80-Layer"><span class="nav-number">8.1.</span> <span class="nav-text">第一次失败：两个 Writer 进入同一 Layer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E5%A4%B1%E8%B4%A5%EF%BC%9A%E7%9B%B8%E5%90%8C%E7%8A%B6%E6%80%81%E7%9A%84-WAW-%E8%A2%AB%E8%B7%B3%E8%BF%87"><span class="nav-number">8.2.</span> <span class="nav-text">第二次失败：相同状态的 WAW 被跳过</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1%E5%A4%B1%E8%B4%A5%EF%BC%9AWriter-%E6%B2%A1%E6%9C%89%E7%AD%89%E5%BE%85%E6%89%80%E6%9C%89-Reader"><span class="nav-number">8.3.</span> <span class="nav-text">第三次失败：Writer 没有等待所有 Reader</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%90%8C%E6%B5%8B%E8%AF%95%E5%88%86%E5%88%AB%E8%83%BD%E8%AF%81%E6%98%8E%E4%BB%80%E4%B9%88"><span class="nav-number">8.4.</span> <span class="nav-text">不同测试分别能证明什么</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E8%BE%B9%E7%95%8C%E4%B8%8E%E6%94%B6%E8%8E%B7"><span class="nav-number">9.</span> <span class="nav-text">当前边界与收获</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">10.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">11.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="CadenXc"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">CadenXc</p>
+  <div class="site-description" itemprop="description">Notes on C++, game engine architecture, real-time rendering, and engineering practice.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/CadenXc" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">CadenXc</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
