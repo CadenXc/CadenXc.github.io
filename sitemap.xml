@@ -2,15 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://cadenxc.com/2026/01/01/2025%E5%B9%B4%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/</loc>
-    
-    <lastmod>2026-01-01</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://cadenxc.com/2026/02/12/AI-%E7%BC%96%E7%A0%81%E7%9A%84%E8%A7%82%E7%82%B9%E5%92%8C%E7%BB%8F%E9%AA%8C%E5%88%86%E4%BA%AB/</loc>
     
     <lastmod>2026-02-12</lastmod>
@@ -20,9 +11,9 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/07/03/MIT-6-S081-Operating-System-Engineering-Lab2-system-calls/</loc>
+    <loc>https://cadenxc.com/2026/01/01/2025%E5%B9%B4%E5%B9%B4%E7%BB%88%E6%80%BB%E7%BB%93/</loc>
     
-    <lastmod>2025-07-03</lastmod>
+    <lastmod>2026-01-01</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -32,6 +23,15 @@
     <loc>https://cadenxc.com/2025/06/27/MIT-6-S081-Operating-System-Engineering-Lab1-Xv6-and-Unix-utilities/</loc>
     
     <lastmod>2025-06-27</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/2025/07/03/MIT-6-S081-Operating-System-Engineering-Lab2-system-calls/</loc>
+    
+    <lastmod>2025-07-03</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -56,9 +56,27 @@
   </url>
   
   <url>
+    <loc>https://cadenxc.com/2026/05/20/Vulkan%E6%B7%B7%E5%90%88%E6%B8%B2%E6%9F%93%E5%99%A8/</loc>
+    
+    <lastmod>2026-05-19</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://cadenxc.com/2026/02/02/job-demo-showcase/</loc>
     
     <lastmod>2026-02-02</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/2025/06/09/%E3%80%8A%E5%BA%9F%E9%83%BD%E7%89%A9%E8%AF%AD%E3%80%8B%E6%B8%B8%E7%8E%A9%E4%BD%93%E9%AA%8C/</loc>
+    
+    <lastmod>2025-06-09</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -83,27 +101,9 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/</loc>
-    
-    <lastmod>2026-02-28</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://cadenxc.com/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/</loc>
     
     <lastmod>2026-09-08</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://cadenxc.com/2026/05/20/Vulkan%E6%B7%B7%E5%90%88%E6%B8%B2%E6%9F%93%E5%99%A8/</loc>
-    
-    <lastmod>2026-05-19</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -119,15 +119,6 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/07/12/%E5%93%B2%E5%AD%A6%E5%92%8C%E5%BF%83%E7%90%86%E5%AD%A6%E4%B9%A6%E7%B1%8D%E6%8E%A8%E8%8D%90/</loc>
-    
-    <lastmod>2025-07-12</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://cadenxc.com/2026/01/16/%E5%8F%AF%E7%BC%96%E8%BE%91%E6%9B%B2%E9%9D%A2%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/</loc>
     
     <lastmod>2026-01-16</lastmod>
@@ -137,9 +128,9 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/11/29/%E5%9B%B0%E9%9A%BE%E9%97%AE%E9%A2%98%E4%B8%8B%E7%9A%84%E7%AE%80%E5%8D%95%E8%A7%A3%E6%B3%95/</loc>
+    <loc>https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/</loc>
     
-    <lastmod>2025-11-29</lastmod>
+    <lastmod>2026-02-28</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -155,9 +146,18 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/</loc>
+    <loc>https://cadenxc.com/2025/11/29/%E5%9B%B0%E9%9A%BE%E9%97%AE%E9%A2%98%E4%B8%8B%E7%9A%84%E7%AE%80%E5%8D%95%E8%A7%A3%E6%B3%95/</loc>
     
-    <lastmod>2025-08-16</lastmod>
+    <lastmod>2025-11-29</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/2025/07/12/%E5%93%B2%E5%AD%A6%E5%92%8C%E5%BF%83%E7%90%86%E5%AD%A6%E4%B9%A6%E7%B1%8D%E6%8E%A8%E8%8D%90/</loc>
+    
+    <lastmod>2025-07-12</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -173,9 +173,9 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/06/09/%E3%80%8A%E5%BA%9F%E9%83%BD%E7%89%A9%E8%AF%AD%E3%80%8B%E6%B8%B8%E7%8E%A9%E4%BD%93%E9%AA%8C/</loc>
+    <loc>https://cadenxc.com/2025/08/16/%E5%AE%9E%E7%8E%B0%E5%80%92%E8%A7%92%E7%AB%8B%E6%96%B9%E4%BD%93/</loc>
     
-    <lastmod>2025-06-09</lastmod>
+    <lastmod>2025-08-16</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -263,9 +263,9 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/</loc>
+    <loc>https://cadenxc.com/2025/09/27/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%B3%95%E7%BA%BF%E5%92%8CUV%E6%9D%82%E8%B0%88/</loc>
     
-    <lastmod>2025-04-27</lastmod>
+    <lastmod>2025-09-27</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -281,9 +281,18 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/2025/09/27/%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%B3%95%E7%BA%BF%E5%92%8CUV%E6%9D%82%E8%B0%88/</loc>
+    <loc>https://cadenxc.com/2025/04/27/%E9%98%85%E8%AF%BB%E3%80%8A%E4%BB%A3%E7%A0%81%E5%A4%A7%E5%85%A8%E3%80%8B/</loc>
     
-    <lastmod>2025-09-27</lastmod>
+    <lastmod>2025-04-27</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/about/index.html</loc>
+    
+    <lastmod>2025-04-28</lastmod>
     
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -307,15 +316,6 @@
     <priority>0.6</priority>
   </url>
   
-  <url>
-    <loc>https://cadenxc.com/about/index.html</loc>
-    
-    <lastmod>2025-04-28</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
 
   <url>
     <loc>https://cadenxc.com/</loc>
@@ -326,20 +326,6 @@
 
   
   <url>
-    <loc>https://cadenxc.com/tags/%E4%B8%AA%E4%BA%BA%E6%80%BB%E7%BB%93/</loc>
-    <lastmod>2026-09-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://cadenxc.com/tags/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/</loc>
-    <lastmod>2026-09-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://cadenxc.com/tags/AI-%E8%BE%85%E5%8A%A9%E7%BC%96%E7%A8%8B/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
@@ -348,6 +334,20 @@
   
   <url>
     <loc>https://cadenxc.com/tags/%E8%BD%AF%E4%BB%B6%E5%B7%A5%E7%A8%8B/</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/tags/%E4%B8%AA%E4%BA%BA%E6%80%BB%E7%BB%93/</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://cadenxc.com/tags/%E8%81%8C%E4%B8%9A%E5%8F%91%E5%B1%95/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -417,6 +417,13 @@
   </url>
   
   <url>
+    <loc>https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E9%9A%8F%E7%AC%94/</loc>
+    <lastmod>2026-09-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://cadenxc.com/tags/Python/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
@@ -439,13 +446,6 @@
   
   <url>
     <loc>https://cadenxc.com/tags/Render-Graph/</loc>
-    <lastmod>2026-09-26</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://cadenxc.com/tags/%E6%B8%B2%E6%9F%93%E6%9E%B6%E6%9E%84/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -494,14 +494,14 @@
   </url>
   
   <url>
-    <loc>https://cadenxc.com/tags/%E8%B5%84%E6%BA%90%E7%B3%BB%E7%BB%9F/</loc>
+    <loc>https://cadenxc.com/tags/%E6%B8%B2%E6%9F%93%E6%9E%B6%E6%9E%84/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://cadenxc.com/tags/%E6%B8%B8%E6%88%8F%E9%9A%8F%E7%AC%94/</loc>
+    <loc>https://cadenxc.com/tags/%E8%B5%84%E6%BA%90%E7%B3%BB%E7%BB%9F/</loc>
     <lastmod>2026-09-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
