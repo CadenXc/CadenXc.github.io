@@ -23,23 +23,22 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"valine","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2},"disqus":{"text":"Load Disqus","order":-1}},"activeClass":"valine"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":true},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false,"width":260},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":true,"pangu":true,"comments":{"style":"tabs","active":"giscus","storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2},"disqus":{"text":"Load Disqus","order":-1}},"activeClass":"giscus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
   <meta property="og:type" content="article">
 <meta property="og:title" content="相机移动时模型出现黑影">
 <meta property="og:url" content="https://cadenxc.com/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/index.html">
-<meta property="og:site_name" content="CadenXc&#39;s Blog">
+<meta property="og:site_name" content="CadenXc">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://cadenxc.com/images/Pasted_image_20260722152504.png">
-<meta property="og:image" content="https://cadenxc.com/images/Pasted_image_20260722152925.png">
 <meta property="article:published_time" content="2026-07-24T12:44:07.000Z">
-<meta property="article:modified_time" content="2026-07-24T12:57:21.341Z">
+<meta property="article:modified_time" content="2026-09-25T16:00:00.000Z">
 <meta property="article:author" content="CadenXc">
-<meta property="article:tag" content="Debug">
+<meta property="article:tag" content="实时渲染">
+<meta property="article:tag" content="图形调试">
+<meta property="article:tag" content="OpenGL">
 <meta property="article:tag" content="RenderDoc">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://cadenxc.com/images/Pasted_image_20260722152504.png">
 
 <link rel="canonical" href="https://cadenxc.com/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/">
 
@@ -54,7 +53,7 @@
   };
 </script>
 
-  <title>相机移动时模型出现黑影 | CadenXc's Blog</title>
+  <title>相机移动时模型出现黑影 | CadenXc</title>
   
 
 
@@ -85,11 +84,11 @@
   </style>
 </noscript>
 
-<link rel="alternate" href="/atom.xml" title="CadenXc's Blog" type="application/atom+xml">
+<link rel="alternate" href="/atom.xml" title="CadenXc" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
-  <div class="container use-motion">
+  <div class="container">
     <div class="headband"></div>
 
     <header class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -106,9 +105,10 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">CadenXc's Blog</h1>
+      <h1 class="site-title">CadenXc</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
+      <p class="site-subtitle" itemprop="description">C++ · Game Engines · Real-Time Rendering</p>
   </div>
 
   <div class="site-nav-right">
@@ -130,22 +130,27 @@
   </li>
         <li class="menu-item menu-item-tags">
 
-    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">35</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">5</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">32</span></a>
 
   </li>
         <li class="menu-item menu-item-about">
 
     <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-github">
+
+    <a href="https://github.com/CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -210,13 +215,13 @@
     <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/07/24/%E7%9B%B8%E6%9C%BA%E7%A7%BB%E5%8A%A8%E6%97%B6%E6%A8%A1%E5%9E%8B%E5%87%BA%E7%8E%B0%E9%BB%91%E5%BD%B1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/feather.jpg">
+      <meta itemprop="image" content="/images/avatar.gif">
       <meta itemprop="name" content="CadenXc">
-      <meta itemprop="description" content="">
+      <meta itemprop="description" content="Notes on C++, game engine architecture, real-time rendering, and engineering practice.">
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="CadenXc's Blog">
+      <meta itemprop="name" content="CadenXc">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -229,10 +234,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2026-07-24 20:44:07 / 修改时间：20:57:21" itemprop="dateCreated datePublished" datetime="2026-07-24T20:44:07+08:00">2026-07-24</time>
+              <time title="创建时间：2026-07-24 20:44:07" itemprop="dateCreated datePublished" datetime="2026-07-24T20:44:07+08:00">2026-07-24</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-09-26 00:00:00" itemprop="dateModified" datetime="2026-09-26T00:00:00+08:00">2026-09-26</time>
+              </span>
 
           
             <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
@@ -256,7 +267,7 @@
   </span>
   
   
-            <div class="post-description">记录一次Debug过程。</div>
+            <div class="post-description">用 RenderDoc 排查模型局部变黑的问题，最后通过补上缺失的 AO 贴图解决。</div>
 
         </div>
       </header>
@@ -267,7 +278,19 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>debug过程。先使用RenderDoc抓帧，<br><img data-src="/images/Pasted_image_20260722152504.png"><br>先在左侧的Event Browser找到一个用于分析的glDrawElements，然后在Texture viewer窗口里右键像素，右下角的Pixel Context就会取到对应颜色（图中模型马赛克处理）。点击右下角的History会出现窗口<br><img data-src="/images/Pasted_image_20260722152925.png"><br>，图中的EID 284执行后RGB异常，Tex After里的RGB都变成了0.00,而我点击一个正确渲染的像素则不是全0。<br>然后打开Pipeline State窗口，选择FS(因为是OpenGL渲染)，然后能点击Edit编译Shader。RenderDoc能汇总执行的shader生成一个main.glsl，RnederDoc可以直接编辑shader代码并应用。抓了正常和非正常的两帧，查看Pipline State里的FS窗口，对比后发现Teature绑定的贴图不同，修改Shader去掉AO的因素影响后模型上的黑影消失，相比正常的模型偏亮。<br>最后排查出问题的原因。没有添加AO贴图，但模型的材质使用了AO，导致AO绑定的贴图是之前的残留。相机移动重新计算AO，导致了模型有时会变暗的问题。<br>解决方法：出问题的模型是因为使用的需要AO贴图的材质但没有AO，换不用AO的材质或者给那些模型加上AO。 </p>
+        <p>之前遇到一个问题：移动相机时，模型的一部分，比如外壳，有时会变黑，有时又恢复原来的颜色。换个角度，黑影可能消失，也可能还在。</p>
+<h2 id="用-RenderDoc-对比两帧"><a href="#用-RenderDoc-对比两帧" class="headerlink" title="用 RenderDoc 对比两帧"></a>用 RenderDoc 对比两帧</h2><p>我分别抓了正常和异常的两帧，找到同一个模型部件对应的 draw call，再对比它们绑定的纹理，发现两次绑定的贴图不一样。</p>
+<p>接着，我请 AI 帮忙通过 RenderDoc 分析，找到了 AO 这个排查方向。在 RenderDoc 中修改 shader，去掉 AO 对颜色的影响后，黑影消失了，不过模型比正常时偏亮。</p>
+<p>这让我把注意力放到了 AO 贴图和材质上。</p>
+<h2 id="尝试两种解决方法"><a href="#尝试两种解决方法" class="headerlink" title="尝试两种解决方法"></a>尝试两种解决方法</h2><p>出问题的模型使用了需要 AO 贴图的材质，但没有提供 AO 贴图。我试了两种方法：</p>
+<ul>
+<li>换成不需要 AO 贴图的材质。</li>
+<li>保留原来的材质，补上缺失的 AO 贴图。</li>
+</ul>
+<p>两种方法在当时的测试中都有效。前一种不再使用 AO 贴图，后一种则给材质补上了需要的输入。</p>
+<p>最后我选了第二种，让美术补上缺失的 AO 贴图。这样可以保留原来的材质，也能减少对引擎的修改。</p>
+<h2 id="还有没弄清楚的地方"><a href="#还有没弄清楚的地方" class="headerlink" title="还有没弄清楚的地方"></a>还有没弄清楚的地方</h2><p>旧文里，我把原因写成了“采样到了之前残留的纹理”。但现在回看，仅凭两次绑定的贴图不同，以及去掉 AO 后黑影消失，还不能确认这一点。</p>
+<p>这次确认的是：补上 AO 贴图，或者换成不需要它的材质，都能解决当时的黑影问题。至于为什么相机移动会影响结果、纹理绑定为什么会变化，还需要继续追踪才能说清楚。</p>
 
     </div>
 
@@ -277,7 +300,9 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/Debug/" rel="tag"># Debug</a>
+              <a href="/tags/%E5%AE%9E%E6%97%B6%E6%B8%B2%E6%9F%93/" rel="tag"># 实时渲染</a>
+              <a href="/tags/%E5%9B%BE%E5%BD%A2%E8%B0%83%E8%AF%95/" rel="tag"># 图形调试</a>
+              <a href="/tags/OpenGL/" rel="tag"># OpenGL</a>
               <a href="/tags/RenderDoc/" rel="tag"># RenderDoc</a>
           </div>
 
@@ -290,7 +315,10 @@
     <a href="/2026/06/25/pixyz-max-sp-auto-pipeline/" rel="prev" title="pixyz-max-sp-auto-pipeline">
       <i class="fa fa-chevron-left"></i> pixyz-max-sp-auto-pipeline
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/" rel="next" title="从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW">
+      从一次失败测试理解 Render Graph 的 RAW、WAR 与 WAW <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -303,7 +331,37 @@
 
           </div>
           
-    <div class="comments" id="valine-comments"></div>
+      <div class="tabs tabs-comment">
+        <ul class="nav-tabs">
+            <li class="tab"><a href="#comment-giscus">GitHub</a></li>
+            <li class="tab"><a href="#comment-valine">valine</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane giscus" id="comment-giscus">
+              
+<div class="comments giscus-container">
+  <script src="https://giscus.app/client.js"
+    data-repo="CadenXc/myblog-source"
+    data-repo-id="R_kgDOOg81fA"
+    data-category="General"
+    data-category-id="DIC_kwDOOg81fM4DDMp1"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="preferred_color_scheme"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async></script>
+</div>
+            </div>
+            <div class="tab-pane valine" id="comment-valine">
+              <div class="comments" id="valine-comments"></div>
+            </div>
+        </div>
+      </div>
 
 <script>
   window.addEventListener('tabs:register', () => {
@@ -350,42 +408,43 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8-RenderDoc-%E5%AF%B9%E6%AF%94%E4%B8%A4%E5%B8%A7"><span class="nav-number">1.</span> <span class="nav-text">用 RenderDoc 对比两帧</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%9D%E8%AF%95%E4%B8%A4%E7%A7%8D%E8%A7%A3%E5%86%B3%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">尝试两种解决方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%98%E6%9C%89%E6%B2%A1%E5%BC%84%E6%B8%85%E6%A5%9A%E7%9A%84%E5%9C%B0%E6%96%B9"><span class="nav-number">3.</span> <span class="nav-text">还有没弄清楚的地方</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
       <div class="site-overview-wrap sidebar-panel">
         <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
     <img class="site-author-image" itemprop="image" alt="CadenXc"
-      src="/images/feather.jpg">
+      src="/images/avatar.gif">
   <p class="site-author-name" itemprop="name">CadenXc</p>
-  <div class="site-description" itemprop="description"></div>
+  <div class="site-description" itemprop="description">Notes on C++, game engine architecture, real-time rendering, and engineering practice.</div>
 </div>
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">30</span>
+          <span class="site-state-item-count">32</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-count">35</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
 </div>
   <div class="links-of-author motion-element">
       <span class="links-of-author-item">
-        <a href="https://github.com/CadenXc/CadenXc.github.io" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc&#x2F;CadenXc.github.io" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+        <a href="https://github.com/CadenXc" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
       </span>
       <span class="links-of-author-item">
         <a href="mailto:xiangchen1492022@outlook.com" title="E-Mail → mailto:xiangchen1492022@outlook.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
@@ -459,15 +518,11 @@
   <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/lozad@1/dist/lozad.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/pangu@4/dist/browser/pangu.min.js"></script>
-  <script src="/lib/velocity/velocity.min.js"></script>
-  <script src="/lib/velocity/velocity.ui.min.js"></script>
 
 <script src="/js/utils.js"></script>
 
-<script src="/js/motion.js"></script>
 
-
-<script src="/js/schemes/muse.js"></script>
+<script src="/js/schemes/pisces.js"></script>
 
 
 <script src="/js/next-boot.js"></script>
