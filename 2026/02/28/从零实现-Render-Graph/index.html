@@ -242,7 +242,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2026-09-26 10:46:30" itemprop="dateModified" datetime="2026-09-26T10:46:30+08:00">2026-09-26</time>
+                <time title="修改时间：2026-09-28 00:00:00" itemprop="dateModified" datetime="2026-09-28T00:00:00+08:00">2026-09-28</time>
               </span>
 
           
@@ -278,6 +278,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
+        <blockquote><p><strong>修订提示（2026-09-28）</strong>：这是毕业设计早期写的学习笔记，正在按当前源码重写。文中把 Render Graph 的一般潜力与本项目已实现的能力混在了一起：例如显存别名复用（memory aliasing）和异步计算（async compute）尚未在 HybridRenderer 中实现；“自动插入 barrier 就保证每一帧正确”也超出了现有验证证据。下文暂作历史记录，请不要将这些描述视为项目现状。</p></blockquote>
+
         <p> 现代图形 API 将内存管理、多线程管理等大部分工作交由开发者负责，这让开发者能有极高的自由度去榨干硬件性能，但也呈指数级增加了 API 使用的复杂度和困难度。例如，使用原生 Vulkan 画一个三角形就需要写上千行的代码。<br> 软件工程的本质就是管理复杂度。现代引擎必须实现一个中间层架构，在利用图形 API 性能优势的同时，有效降低其复杂度，并让整体渲染管线更加可扩展、易于调试。这个全新的渲染调度大脑就是 <strong>RenderGraph</strong>。<br> RenderGraph（也叫 Frame Graph）最早由 EA 寒霜引擎（Frostbite Engine）团队在<a target="_blank" rel="noopener" href="https://www.gdcvault.com/play/1024612/FrameGraph-Extensible-Rendering-Architecture-in">GDC 2017 大会</a>上首次提出。它主要由 <strong>RenderPass</strong> 和 <strong>Resource</strong> 构成：</p>
 <ul>
 <li><strong>RenderPass</strong> 是一份元数据，定义了一个完整的渲染流程需要用到的所有资源。</li>
