@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="2gGDiBNyZnfepCuJqyZUH_0nmZ1FT9Zq6FBvzpxvvXk">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"cadenxc.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false,"width":260},"copycode":{"enable":true,"show_result":true,"style":"flat"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"giscus","storage":true,"lazyload":false,"nav":null,"activeClass":"giscus"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="从通用设计出发，解释 Render Graph 如何把 Pass 的资源声明编译为依赖、Vulkan 同步和 transient image allocation 复用。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="理解 Vulkan Render Graph：资源依赖、同步与 Image Aliasing">
+<meta property="og:url" content="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/index.html">
+<meta property="og:site_name" content="CadenXc">
+<meta property="og:description" content="从通用设计出发，解释 Render Graph 如何把 Pass 的资源声明编译为依赖、Vulkan 同步和 transient image allocation 复用。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-02-28T14:32:34.000Z">
+<meta property="article:modified_time" content="2026-10-11T16:00:00.000Z">
+<meta property="article:author" content="CadenXc">
+<meta property="article:tag" content="Vulkan">
+<meta property="article:tag" content="Render Graph">
+<meta property="article:tag" content="GPU 同步">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>理解 Vulkan Render Graph：资源依赖、同步与 Image Aliasing | CadenXc</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="CadenXc" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">CadenXc</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">C++ · Game Engines · Real-Time Rendering</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">32</span></a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">35</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-github">
+
+    <a href="https://github.com/CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://cadenxc.com/2026/02/28/%E4%BB%8E%E9%9B%B6%E5%AE%9E%E7%8E%B0-Render-Graph/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CadenXc">
+      <meta itemprop="description" content="Notes on C++, game engine architecture, real-time rendering, and engineering practice.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="CadenXc">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          理解 Vulkan Render Graph：资源依赖、同步与 Image Aliasing
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2026-02-28 22:32:34" itemprop="dateCreated datePublished" datetime="2026-02-28T22:32:34+08:00">2026-02-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2026-10-12 00:00:00" itemprop="dateModified" datetime="2026-10-12T00:00:00+08:00">2026-10-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/" itemprop="url" rel="index"><span itemprop="name">图形学</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%9B%BE%E5%BD%A2%E5%AD%A6/%E6%B8%B2%E6%9F%93%E6%9E%B6%E6%9E%84/" itemprop="url" rel="index"><span itemprop="name">渲染架构</span></a>
+                </span>
+            </span>
+
+          
+            <div class="post-description">从通用设计出发，解释 Render Graph 如何把 Pass 的资源声明编译为依赖、Vulkan 同步和 transient image allocation 复用。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Render Graph 没有统一 API。本文介绍一种保守的通用设计，尝试回答一个核心问题：Render Graph 如何把 Pass 对逻辑资源的声明，转换为可执行的依赖顺序、Vulkan barrier 和物理资源规划？RAW、WAR 与 WAW 的完整推导已经在<a href="/2026/08/18/%E4%BB%8E%E4%B8%80%E6%AC%A1%E5%A4%B1%E8%B4%A5%E6%B5%8B%E8%AF%95%E7%90%86%E8%A7%A3Render-Graph%E7%9A%84RAW-WAR%E4%B8%8EWAW/">上一篇文章</a>中展开，这里只保留理解编译过程所需的部分。</p>
+<h2 id="1-为什么需要-Render-Graph"><a href="#1-为什么需要-Render-Graph" class="headerlink" title="1. 为什么需要 Render Graph"></a>1. 为什么需要 Render Graph</h2><p>在实时渲染中，一帧通常由多个 Pass 共同完成。一个 Pass 可能写入颜色、深度或法线 image，后续 Pass 再将它们作为 attachment、sampled image 或 storage image 使用。随着 Pass 数量增加，如果每个 Pass 分别创建资源、维护 image layout、插入 barrier 并管理生命周期，资源依赖和同步逻辑就会分散在渲染代码中，修改渲染流程时也容易遗漏状态转换。</p>
+<p>Render Graph 提供了一种声明式组织方式：Pass 只描述自己读取和写入哪些逻辑资源，以及如何使用它们；图在编译阶段推导依赖、执行顺序和资源生命周期，在执行阶段将 barrier 与渲染命令录制到 command buffer。command buffer 被提交后，GPU 才真正开始执行。</p>
+<h2 id="2-三层资源与一帧时间线"><a href="#2-三层资源与一帧时间线" class="headerlink" title="2. 三层资源与一帧时间线"></a>2. 三层资源与一帧时间线</h2><p>理解 Render Graph 之前，需要先区分逻辑资源、<code>VkImage</code> 和 device-memory allocation。它们分别处在渲染架构、Vulkan 对象和实际存储三个层次。</p>
+<p><strong>逻辑资源</strong>是 Render Graph 用来表达数据身份和依赖关系的抽象。一个名字或 handle 可以代表 <code>Lighting</code>、<code>FilteredLighting</code> 或 <code>FinalColor</code>，Pass 通过它声明自己读取和写入的数据。逻辑资源还可以保存尺寸、format、usage 等描述，但在 Setup 阶段，它不一定已经拥有对应的 Vulkan image 或 GPU memory。</p>
+<p><strong><code>VkImage</code></strong> 是 Vulkan image object 的不透明 handle。创建它时需要指定尺寸、<code>VkFormat</code>、sample count、usage flags 和 mip levels 等信息；随后通过 <code>VkImageView</code> 才能作为 attachment 或 descriptor 中的 image 使用。<code>VkImage</code> 描述一张 GPU image 应该如何被解释和访问，但它本身不等于存放像素的显存。在原生 Vulkan 中，创建 image 后还需要选择 device memory 并完成绑定；VMA 等分配器可以把这些步骤包装在一起。</p>
+<p><strong>Device-memory allocation</strong> 才是承载 image 内容的实际 GPU 存储。通常一个逻辑资源对应一个 <code>VkImage</code>，再由一个 allocation 为它提供内存；但这不是唯一映射。只要生命周期和创建参数满足约束，不同逻辑资源仍然可以保留各自独立的 <code>VkImage</code> 和 image view，并在不同时间绑定同一块 allocation。这正是后文 transient image aliasing 的基础。</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Logical resource A → VkImage A ─┐</span><br><span class="line">                                ├→ Shared allocation</span><br><span class="line">Logical resource B → VkImage B ─┘</span><br></pre></td></tr></table></figure>
+
+<p>区分这三层之后，一帧可以概括为下面的时间线：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Setup</span><br><span class="line">    Pass 声明逻辑资源及用途</span><br><span class="line">        ↓</span><br><span class="line">Compile</span><br><span class="line">    校验声明、建立依赖、划分 layer、计算生命周期、规划物理资源</span><br><span class="line">        ↓</span><br><span class="line">Execute</span><br><span class="line">    CPU 向 command buffer 录制 barrier、draw、dispatch 或 trace 命令</span><br><span class="line">        ↓</span><br><span class="line">Queue Submit</span><br><span class="line">    command buffer 被提交，GPU 才执行其中的工作</span><br></pre></td></tr></table></figure>
+
+<p>Setup、Compile 和 Execute 都首先发生在 CPU 端。Setup 收集 Pass 声明；Compile 根据声明建立依赖、计算生命周期并规划物理资源；Execute 将 barrier、draw、dispatch 或 trace 命令写入 command buffer。调用 queue submit 仍然是 CPU 操作，但提交之后，GPU 才可能异步执行这些命令。因此，<code>RenderGraph::Execute</code> 返回不代表本帧的 GPU 工作已经完成。</p>
+<h2 id="3-Pass-声明如何编译成依赖图"><a href="#3-Pass-声明如何编译成依赖图" class="headerlink" title="3. Pass 声明如何编译成依赖图"></a>3. Pass 声明如何编译成依赖图</h2><p>Render Graph 的输入不是一串立即执行的渲染命令，而是一组 Pass 声明。可以先考虑一条简化的数据链：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Pass A</span><br><span class="line">    Write Lighting</span><br><span class="line"></span><br><span class="line">Pass B</span><br><span class="line">    Read  Lighting</span><br><span class="line">    Write FilteredLighting</span><br><span class="line"></span><br><span class="line">Pass C</span><br><span class="line">    Read  FilteredLighting</span><br><span class="line">    Write FinalColor</span><br></pre></td></tr></table></figure>
+
+<p>在 Setup 阶段，这些 <code>Read</code> 和 <code>Write</code> 只会登记逻辑资源 handle、访问类型以及可能需要的 shader binding；它们不会立刻运行 shader，也不会让 GPU 开始渲染。等所有 Pass 都完成声明后，Compile 才能看到一帧完整的 producer&#x2F;consumer 关系。</p>
+<p>在这个例子中，Pass A 是 <code>Lighting</code> 的 producer，Pass B 是它的 consumer。因为 B 必须读取 A 写入的结果，图中需要一条从 A 指向 B 的 RAW（read after write）edge。同理，<code>FilteredLighting</code> 建立了 B 到 C 的 edge：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Pass A ──Lighting──▶ Pass B ──FilteredLighting──▶ Pass C</span><br></pre></td></tr></table></figure>
+
+<p>edge 表达的是必须满足的逻辑先后关系，而不是只依赖 CPU 循环恰好采用的调用顺序；在这种实现中，Pass 的声明顺序仍会参与判断某次读写属于哪个资源版本。除了 RAW，新的 writer 还需要考虑此前的 reader 和 writer，从而处理 WAR 与 WAW；本文只保留与 Render Graph 编译过程直接相关的结论。</p>
+<p>依赖建立后，可以通过拓扑排序把 DAG 划分为 execution layer。在上面的线性关系中，A、B、C 分别位于连续的三个 layer。若另一个 Pass D 不依赖 A、B、C，它可以和同样没有前驱的 A 被放入第一层。同 layer 只表示依赖图没有要求它们互相等待：具体实现仍可能把命令顺序录制到同一个 command buffer，GPU 是否产生重叠还取决于命令类型、barrier、queue 和硬件调度。</p>
+<p>因此，Compile 的结果不是“GPU 已经执行了一张图”，而是一份后续录制命令所需的计划：哪些 Pass 必须先执行、哪些资源连接 producer 与 consumer，以及每个资源从哪个 layer 存活到哪个 layer。依赖图解决逻辑排序，真正约束 GPU 执行和内存访问的工作还需要下一节的 Vulkan synchronization。</p>
+<h2 id="4-从逻辑依赖到-Vulkan-同步"><a href="#4-从逻辑依赖到-Vulkan-同步" class="headerlink" title="4. 从逻辑依赖到 Vulkan 同步"></a>4. 从逻辑依赖到 Vulkan 同步</h2><p>依赖图解决的是逻辑排序，但一条从 Pass A 指向 Pass B 的 edge 只是 CPU 端的数据结构。它不会自动出现在 command buffer 中，也不能单独保证 GPU 等待。Render Graph 在 Execute 阶段还需要把资源用途转换为 <a target="_blank" rel="noopener" href="https://docs.vulkan.org/spec/latest/chapters/synchronization.html">Vulkan synchronization</a> 信息：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Resource usage</span><br><span class="line">    → pipeline stage</span><br><span class="line">    → access mask</span><br><span class="line">    → image layout</span><br></pre></td></tr></table></figure>
+
+<p><code>stage</code> 选择 barrier 要约束哪些 GPU 工作，例如 compute shader 或 fragment shader；<code>access</code> 进一步选择这些 stage 中的哪类内存读写；<code>layout</code> 则描述 image 当前适合哪种访问方式。三者必须与资源的真实使用方式匹配：范围过窄可能遗漏 hazard，范围始终使用 <code>ALL_COMMANDS</code> 虽然更保守，却也可能阻塞无关工作。</p>
+<p>假设 Pass A 通过 compute shader 写入一张 storage image，Pass B 随后在 fragment shader 中采样它。两次使用可以概括为：</p>
+<table>
+<thead>
+<tr>
+<th>使用者</th>
+<th>Stage</th>
+<th>Access</th>
+<th>Layout</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Pass A：compute 写入</td>
+<td><code>COMPUTE_SHADER</code></td>
+<td><code>SHADER_WRITE</code></td>
+<td><code>GENERAL</code></td>
+</tr>
+<tr>
+<td>Pass B：fragment 采样</td>
+<td><code>FRAGMENT_SHADER</code></td>
+<td><code>SHADER_READ</code></td>
+<td><code>SHADER_READ_ONLY_OPTIMAL</code></td>
+</tr>
+</tbody></table>
+<p>在两次访问之间，image barrier 的 source scope 覆盖 A 的 compute write，destination scope 覆盖 B 的 fragment read。它同时承担三个相关但不同的职责：</p>
+<ol>
+<li><strong>Execution dependency</strong>：B 中被约束的 fragment 工作不能早于 A 中被约束的 compute 工作完成。</li>
+<li><strong>Memory dependency</strong>：A 的写入结果被设为 available，并对 B 的读取变得 visible，B 才能看到正确内容。</li>
+<li><strong>Layout transition</strong>：image 从适合 storage 访问的 <code>GENERAL</code> 转换到适合采样的 <code>SHADER_READ_ONLY_OPTIMAL</code>。</li>
+</ol>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Compute shader writes image</span><br><span class="line">    stage  = COMPUTE_SHADER</span><br><span class="line">    access = SHADER_WRITE</span><br><span class="line">    layout = GENERAL</span><br><span class="line">                │</span><br><span class="line">                │ VkImageMemoryBarrier2</span><br><span class="line">                ▼</span><br><span class="line">Fragment shader samples image</span><br><span class="line">    stage  = FRAGMENT_SHADER</span><br><span class="line">    access = SHADER_READ</span><br><span class="line">    layout = SHADER_READ_ONLY_OPTIMAL</span><br></pre></td></tr></table></figure>
+
+<p>如果只有 CPU 录制顺序而没有正确的 dependency，前后命令的相关 pipeline stage 仍可能在 GPU 上重叠；即使后一个 shader 等到了前一个 shader 执行结束，没有合适的 memory dependency，它也不一定能够看见前一次写入。反过来，只做内存可见性而没有覆盖正确的 execution scope，同样无法解决并发访问。</p>
+<p><code>vkCmdPipelineBarrier2</code> 的调用本身仍然发生在 CPU 录制阶段。它只是把 barrier 命令写入 command buffer；等 command buffer 被提交后，GPU 执行到这个位置时，barrier 才真正约束前后的工作。也正因为如此，graph layer、CPU 循环顺序和 Vulkan barrier 分别解决不同层面的问题，不能互相替代。</p>
+<p>上面的 image barrier 针对某个 image 及其 subresource。后文的 image aliasing 会引入另一种情况：前后访问属于两个不同的 <code>VkImage</code>，但它们共享同一块 allocation。此时除了新 image 自己的 layout transition，还需要覆盖共享内存访问的 memory barrier。</p>
+<p>为了聚焦基本机制，本文后续采用按整张 image、单 graphics queue 跟踪状态的保守设计；它不是完整的 subresource 或多队列同步调度器。</p>
+<h2 id="5-从生命周期推导-transient-image-aliasing"><a href="#5-从生命周期推导-transient-image-aliasing" class="headerlink" title="5. 从生命周期推导 transient image aliasing"></a>5. 从生命周期推导 transient image aliasing</h2><p>Render Graph 在 Compile 阶段已经知道一帧内所有 Pass 的资源声明，因此不仅可以推导依赖，还可以计算临时资源的生命周期。对于一张 transient image，可以用第一次和最后一次出现的 execution layer 表示它的使用区间：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Resource A: [firstLayer = 1, lastLayer = 3]</span><br><span class="line">Resource B: [firstLayer = 4, lastLayer = 6]</span><br></pre></td></tr></table></figure>
+
+<p>若 A 的最后使用层严格早于 B 的首次使用层：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">A.lastLayer &lt; B.firstLayer</span><br></pre></td></tr></table></figure>
+
+<p>那么图中不存在同时访问 A 和 B 的 Pass，它们就具备复用底层内存的时间条件。这里必须使用严格小于；若 <code>A.lastLayer == B.firstLayer</code>，两张 image 仍在同一个 layer 中存活，而同 layer 的 Pass 没有彼此等待的依赖，GPU 访问可能重叠。</p>
+<h3 id="共享的是-allocation，不是资源身份"><a href="#共享的是-allocation，不是资源身份" class="headerlink" title="共享的是 allocation，不是资源身份"></a>共享的是 allocation，不是资源身份</h3><p>Memory aliasing 指多个 Vulkan resource 绑定到重叠的 <code>VkDeviceMemory</code> 范围。A 和 B 仍然是两个逻辑资源，也分别拥有自己的 <code>VkImage</code> 和 <code>VkImageView</code>；它们只是在不同时间使用同一块 allocation：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Logical A → VkImage A ─┐   A 的生命周期内使用</span><br><span class="line">                       ├→ Shared allocation</span><br><span class="line">Logical B → VkImage B ─┘   B 的生命周期内使用</span><br></pre></td></tr></table></figure>
+
+<p>这种复用可能降低应用的 device-memory footprint，但不会自动带来更高帧率。Vulkan 允许更一般的 aliasing：只要 allocation 的 size、alignment 和 memory type 等要求能够同时满足，参数不同的资源也可能共享内存。<a target="_blank" rel="noopener" href="https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/resource_aliasing.html">VMA 的 resource aliasing 文档</a>给出了这种计算方式。为了缩小实现和验证范围，本文采用更保守的规则，只组合 width、height、format、sample count 和 usage 都相同的 image。</p>
+<h3 id="旧内容必须视为无效"><a href="#旧内容必须视为无效" class="headerlink" title="旧内容必须视为无效"></a>旧内容必须视为无效</h3><p>当 A 和 B 使用同一内存范围时，A 的写入会改变 B 背后的那些字节。除非满足 Vulkan 对一致解释 alias contents 的特殊条件，否则不能把 A 的结果当作 B 的初始内容。本文采用的保守方案不尝试跨 alias 保留数据，而是把 B 当作一张未初始化的新 image：它的第一次使用必须写入或清除完整的有效区域，不能先读取旧 allocation 中的内容。</p>
+<p>因此，history、persistent 和 external image 不适合参与这种帧内 transient aliasing。history 需要下一帧继续读取旧内容；persistent resource 的生命周期跨越多帧；external resource 的内存和所有权也不由当前图独占管理。把它们加入 alias group 可能在仍有消费者时覆盖有效数据。Render Graph 可以检查 B 的首次声明不是读取，却无法仅凭 <code>Write</code> 声明证明 shader 一定覆盖所有后续会读取的像素；完整写入或清除仍然是 Pass 必须遵守的契约。</p>
+<h3 id="从-A-切换到-B-时需要同步"><a href="#从-A-切换到-B-时需要同步" class="headerlink" title="从 A 切换到 B 时需要同步"></a>从 A 切换到 B 时需要同步</h3><p>生命周期在逻辑图上不重叠，并不意味着 GPU 已经自动完成 A 的访问。Vulkan 规范要求：若对重叠内存范围的 alias 使用中至少有一次写入，两次使用之间必须存在覆盖相应 access types 的 memory dependency。<a target="_blank" rel="noopener" href="https://docs.vulkan.org/spec/latest/chapters/resources.html#resources-memory-aliasing">Vulkan Memory Aliasing</a></p>
+<p>一种直接的实现可以把切换拆成两个职责：</p>
+<table>
+<thead>
+<tr>
+<th>Barrier</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Global <code>VkMemoryBarrier2</code></td>
+<td>在前一个 alias 的实际 stage&#x2F;access 与新 alias 的首次访问之间建立 execution&#x2F;memory dependency。</td>
+</tr>
+<tr>
+<td>B 的 <code>VkImageMemoryBarrier2</code></td>
+<td>以 <code>oldLayout = UNDEFINED</code> 抛弃旧内容，转换到 B 首次用途需要的 layout。</td>
+</tr>
+</tbody></table>
+<p>之所以不能只依赖 B 的 image barrier，是因为 A 和 B 是两个不同的 <code>VkImage</code>；B 自己的 layout transition 不能完整表达 A 对共享 allocation 的历史访问。反过来，global memory barrier 也不负责设置 B 的 image layout，所以两个职责缺一不可。</p>
+<p><code>VkMemoryBarrier2</code> 本身不引用某个 image 或 allocation，它会作用于其 stage&#x2F;access scope 匹配的内存操作；这里通过精确记录前后 alias 的实际用途来缩小同步范围，而不是用资源 handle 将 barrier 限定到这块 allocation。</p>
+<p>alias group 还可能在切换前被多个互不依赖的 Pass 使用。例如 A 同时被 compute shader 和 fragment shader 读取，CPU 后录制的 Pass 不一定在 GPU 上最后完成。实现需要累计 A 实际使用过的 stage&#x2F;access，切换时用它们作为 source scope，再把 B 的首次 stage&#x2F;access 作为 destination scope。这样 B 写入共享 allocation 之前，所有仍可能访问 A 的 GPU 工作都被纳入依赖。</p>
+<p>最后还要区分 image object 和 allocation 的所有权。alias child 拥有自己的 <code>VkImage</code> 与 view，但不能释放共享 allocation；allocation owner 才负责最终释放显存。销毁时必须先销毁所有 child image，再释放 owner 所持有的 allocation，并确保 GPU 已经不再使用这些对象。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Vulkan/" rel="tag"># Vulkan</a>
+              <a href="/tags/Render-Graph/" rel="tag"># Render Graph</a>
+              <a href="/tags/GPU-%E5%90%8C%E6%AD%A5/" rel="tag"># GPU 同步</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2026/02/24/Vulkan-Debug%E5%BF%83%E5%BE%97/" rel="prev" title="Vulkan Debug心得">
+      <i class="fa fa-chevron-left"></i> Vulkan Debug心得
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2026/05/20/Vulkan%E6%B7%B7%E5%90%88%E6%B8%B2%E6%9F%93%E5%99%A8/" rel="next" title="Vulkan混合渲染器">
+      Vulkan混合渲染器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+<div class="comments giscus-container">
+  <script src="https://giscus.app/client.js"
+    data-repo="CadenXc/myblog-source"
+    data-repo-id="R_kgDOOg81fA"
+    data-category="General"
+    data-category-id="DIC_kwDOOg81fM4DDMp1"
+    data-mapping="pathname"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="preferred_color_scheme"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async></script>
+</div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Render-Graph"><span class="nav-number">1.</span> <span class="nav-text">1. 为什么需要 Render Graph</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%B8%89%E5%B1%82%E8%B5%84%E6%BA%90%E4%B8%8E%E4%B8%80%E5%B8%A7%E6%97%B6%E9%97%B4%E7%BA%BF"><span class="nav-number">2.</span> <span class="nav-text">2. 三层资源与一帧时间线</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Pass-%E5%A3%B0%E6%98%8E%E5%A6%82%E4%BD%95%E7%BC%96%E8%AF%91%E6%88%90%E4%BE%9D%E8%B5%96%E5%9B%BE"><span class="nav-number">3.</span> <span class="nav-text">3. Pass 声明如何编译成依赖图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E4%BB%8E%E9%80%BB%E8%BE%91%E4%BE%9D%E8%B5%96%E5%88%B0-Vulkan-%E5%90%8C%E6%AD%A5"><span class="nav-number">4.</span> <span class="nav-text">4. 从逻辑依赖到 Vulkan 同步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E4%BB%8E%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F%E6%8E%A8%E5%AF%BC-transient-image-aliasing"><span class="nav-number">5.</span> <span class="nav-text">5. 从生命周期推导 transient image aliasing</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E7%9A%84%E6%98%AF-allocation%EF%BC%8C%E4%B8%8D%E6%98%AF%E8%B5%84%E6%BA%90%E8%BA%AB%E4%BB%BD"><span class="nav-number">5.1.</span> <span class="nav-text">共享的是 allocation，不是资源身份</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A7%E5%86%85%E5%AE%B9%E5%BF%85%E9%A1%BB%E8%A7%86%E4%B8%BA%E6%97%A0%E6%95%88"><span class="nav-number">5.2.</span> <span class="nav-text">旧内容必须视为无效</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E-A-%E5%88%87%E6%8D%A2%E5%88%B0-B-%E6%97%B6%E9%9C%80%E8%A6%81%E5%90%8C%E6%AD%A5"><span class="nav-number">5.3.</span> <span class="nav-text">从 A 切换到 B 时需要同步</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="CadenXc"
+      src="/images/avatar.gif">
+  <p class="site-author-name" itemprop="name">CadenXc</p>
+  <div class="site-description" itemprop="description">Notes on C++, game engine architecture, real-time rendering, and engineering practice.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+        <span class="site-state-item-count">5</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">35</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/CadenXc" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;CadenXc" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2026</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">CadenXc</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
